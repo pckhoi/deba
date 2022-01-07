@@ -4,7 +4,7 @@ import typing
 from attrs import define
 
 import zope.interface
-from liner.attrs_utils import field_transformer
+from dirk.attrs_utils import field_transformer
 
 
 class IC(zope.interface.Interface):

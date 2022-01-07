@@ -2,7 +2,7 @@ import typing
 
 from attrs import define
 
-from liner.attrs_utils import field_transformer
+from dirk.attrs_utils import field_transformer
 
 
 @define(field_transformer=field_transformer(globals()))

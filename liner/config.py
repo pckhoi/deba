@@ -1,18 +1,24 @@
 import typing
 
-import attr
+from attrs import define
 
-from liner.stage import Stage
-from liner.repositories.base import Repository
+from liner.attrs_utils import field_transformer
 
 
-@attr.s(auto_attribs=True)
+@define(field_transformer=field_transformer(globals()))
+class Stage(object):
+    name: str
+
+
+@define(field_transformer=field_transformer(globals()))
+class Rule(object):
+    target: str
+    dependencies: typing.List[str]
+    recipe: typing.List[str]
+
+
+@define(field_transformer=field_transformer(globals()))
 class Config(object):
-    stages = attr.ib(factory=list, type=typing.List[Stage])
-    repositories = attr.ib(
-        factory=list,
-        type=typing.List[Repository],
-        validator=attr.validators.deep_iterable(
-            member_validator=attr.validators.provides(Repository),
-        )
-    )
+    targets: typing.List[str]
+    stages: typing.List[Stage]
+    overrides: typing.List[Rule]

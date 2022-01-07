@@ -4,40 +4,40 @@
 import typing
 from unittest import TestCase
 
-import attr
+from attrs import define, field
 
 from liner.serialize import yaml_load, yaml_dump
 
 
-@attr.s(auto_attribs=True)
+@define()
 class Person(object):
-    name: str = attr.ib(default=None)
-    birth_date: str = attr.ib(default=None)
-    height: int = attr.ib(default=None)
-    scores: typing.List[int] = attr.ib(default=None)
+    name: str = field(default=None)
+    birth_date: str = field(default=None)
+    height: int = field(default=None)
+    scores: typing.List[int] = field(default=None)
 
 
-@attr.s(auto_attribs=True)
+@define()
 class Website(object):
-    url: str = attr.ib(default=None)
+    url: str = field(default=None)
 
 
-@attr.s(auto_attribs=True)
+@define()
 class Employment(object):
-    title: str = attr.ib(default=None)
+    title: str = field(default=None)
 
 
-@attr.s(auto_attribs=True)
+@define()
 class Listing(object):
-    user: Person = attr.ib(default=None)
-    websites: typing.List[Website] = attr.ib(default=None)
-    employments: typing.Dict[str, Employment] = attr.ib(default=None)
+    user: Person = field(default=None)
+    websites: typing.List[Website] = field(default=None)
+    employments: typing.Dict[str, Employment] = field(default=None)
 
 
-@attr.s(auto_attribs=True)
+@define()
 class Animal(object):
-    omnivore: bool = attr.ib(default=None)
-    vertebrate: bool = attr.ib(default=None)
+    omnivore: bool = field(default=None)
+    vertebrate: bool = field(default=None)
 
 
 class YAMLTestCase(TestCase):

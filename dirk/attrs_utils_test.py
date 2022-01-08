@@ -1,7 +1,7 @@
 from unittest import TestCase
 import typing
 
-from attrs import define
+from attrs import define, field
 
 import zope.interface
 from dirk.attrs_utils import field_transformer
@@ -16,6 +16,8 @@ class IC(zope.interface.Interface):
 class A:
     a: str
     b: int
+    c: typing.Union[str, typing.List[str]]
+    d: float = field(default=3.14)
 
 
 @zope.interface.implementer(IC)
@@ -42,15 +44,27 @@ class FieldTransformerTestCase(TestCase):
         obj = A()
         self.assertIsNone(obj.a)
         self.assertIsNone(obj.b)
+        self.assertEqual(obj.d, 3.14)
 
-        obj = A("a", 1)
+        obj = A("a", 1, d=12.3)
         self.assertEqual(obj.a, "a")
         self.assertEqual(obj.b, 1)
+        self.assertEqual(obj.d, 12.3)
 
         with self.assertRaises(TypeError):
             obj = A(a=3)
         with self.assertRaises(TypeError):
             obj = A(b="3")
+
+    def test_union_fields(self):
+        obj = A(c="3")
+        self.assertEqual(obj.c, "3")
+
+        obj = A(c=["3"])
+        self.assertEqual(obj.c, ["3"])
+
+        with self.assertRaises(TypeError):
+            obj = A(c=3.1)
 
     def test_nested_fields(self):
         obj = B()

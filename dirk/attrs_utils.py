@@ -68,5 +68,5 @@ def field_transformer(namespace):
 DOC_K = "dirk_doc"
 
 
-def doc(doc: str, default=None):
+def doc(doc: str, default=NOTHING):
     return field(metadata={DOC_K: doc}, default=default)

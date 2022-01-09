@@ -43,7 +43,6 @@ class ExecutionRule(object):
 class Config(object):
     """Dirk configurations."""
 
-    data_dir: str = doc("keep all generated data in this folder", default="data")
     targets: typing.List[str] = doc(
         "explicit targets to generate when user run `make dirk`"
     )
@@ -59,3 +58,4 @@ class Config(object):
     files_from: typing.List[FilesProvider] = doc(
         "list of external files providers that dirk can consult and discover more files"
     )
+    data_dir: str = doc("keep all generated data in this folder", default="data")

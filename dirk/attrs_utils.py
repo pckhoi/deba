@@ -1,7 +1,7 @@
 import typing
 
 import zope.interface
-from attrs import resolve_types, validators, field, NOTHING
+from attrs import resolve_types, validators, field, NOTHING, setters
 
 
 def _union_type_validator(types):
@@ -51,15 +51,21 @@ def field_transformer(namespace):
             if type(field.type) is str and field.type == cls.__name__:
                 field = field.evolve(type=cls)
             validator = _type_validator(field.type)
-            if field.default is NOTHING:
-                validator = validators.optional(validator)
-                field = field.evolve(default=None)
             validator = (
                 validator
                 if field.validator is None
-                else validators.and_(field.validator, validator)
+                else validators.and_(validator, field.validator)
             )
-            results.append(field.evolve(validator=validator))
+            if field.default is NOTHING:
+                validator = validators.optional(validator)
+                field = field.evolve(default=None)
+            on_setattr = setters.validate
+            on_setattr = (
+                on_setattr
+                if field.on_setattr is None
+                else setters.pipe(on_setattr, field.on_setattr)
+            )
+            results.append(field.evolve(validator=validator, on_setattr=on_setattr))
         return results
 
     return transform

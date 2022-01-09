@@ -107,4 +107,4 @@ class ExprTemplateTestCase(unittest.TestCase):
         ]:
             et = ExprTemplate.from_str(case.template)
             node = ast.parse(case.source).body[0].value
-            self.assertEqual(et.match_expr(node), case.file, repr(case))
+            self.assertEqual(et.match_node(node), case.file, repr(case))

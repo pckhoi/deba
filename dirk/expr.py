@@ -4,7 +4,8 @@ import typing
 import ast
 from fnmatch import fnmatchcase
 
-from attrs import define, field, Factory, setters
+from attrs import define, field
+from numpy import isin
 from dirk.attrs_utils import field_transformer
 
 
@@ -36,6 +37,15 @@ class ExprTemplate(object):
                 s = node.value if node.value[0] == "^" else "^" + node.value
                 s = s if s[-1] == "$" else s + "$"
                 self.file_pat = re.compile(s)
+            elif isinstance(node, ast.Call):
+                if (
+                    (len(node.args) == 0 and len(node.keywords) == 0)
+                    or len(node.args) > 1
+                    or len(node.keywords) > 1
+                ):
+                    raise ExprTemplateParseError(
+                        "function call must have exactly one argument or one keyword argument"
+                    )
         if str_count != 1:
             raise ExprTemplateParseError(
                 "expect exactly 1 string in expression template, found %d" % str_count
@@ -98,6 +108,30 @@ class ExprTemplate(object):
                         return "", False
                     return node2.value, True
                 return "", node1.value == node2.value
+            elif isinstance(node1, ast.Call):
+                _, ok = self.compare_ast(node1.func, node2.func)
+                if not ok:
+                    return "", False
+                s = ""
+                if len(node1.args) > 0:
+                    for arg in node2.args:
+                        v, ok = self.compare_ast(node1.args[0], arg)
+                        if ok:
+                            if v != "":
+                                s = v
+                            break
+                    else:
+                        return "", False
+                elif len(node1.keywords) > 0:
+                    for kw in node2.keywords:
+                        v, ok = self.compare_ast(node1.keywords[0], kw)
+                        if ok:
+                            if v != "":
+                                s = v
+                            break
+                    else:
+                        return "", False
+                return s, True
             s = ""
             for k, v in vars(node1).items():
                 if k in ("lineno", "col_offset", "end_lineno", "end_col_offset"):

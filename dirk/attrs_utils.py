@@ -56,7 +56,7 @@ def field_transformer(namespace):
                 if field.validator is None
                 else validators.and_(validator, field.validator)
             )
-            if field.default is NOTHING:
+            if field.default is NOTHING and not field.metadata.get(REQUIRED_K, False):
                 validator = validators.optional(validator)
                 field = field.evolve(default=None)
             on_setattr = setters.validate
@@ -72,7 +72,12 @@ def field_transformer(namespace):
 
 
 DOC_K = "dirk_doc"
+REQUIRED_K = "dirk_required"
 
 
-def doc(doc: str, default=NOTHING):
-    return field(metadata={DOC_K: doc}, default=default)
+def doc(doc: str, default=NOTHING, converter=None, required=False):
+    return field(
+        metadata={DOC_K: doc, REQUIRED_K: required},
+        default=default,
+        converter=converter,
+    )

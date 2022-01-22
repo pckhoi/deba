@@ -1,16 +1,13 @@
 import re
 import typing
-import unittest
 import ast
 
 from attrs import define
 from dirk.expr import ExprTemplate, ExprTemplateParseError
+from dirk.test_utils import ASTTestCase
 
 
-class ExprTemplateTestCase(unittest.TestCase):
-    def assertASTEqual(self, a: ast.Expr, b: ast.Expr):
-        self.assertEqual(ast.dump(a, indent=4), ast.dump(b, indent=4))
-
+class ExprTemplateTestCase(ASTTestCase):
     def test_from_str(self):
         with self.assertRaises(ExprTemplateParseError) as cm:
             ExprTemplate.from_str("`abc*")
@@ -36,6 +33,13 @@ class ExprTemplateTestCase(unittest.TestCase):
             ExprTemplate.from_str(r"r'*'")
         self.assertEqual(
             cm.exception.args,
+            ("expression must be a function call, found <class 'ast.Constant'>",),
+        )
+
+        with self.assertRaises(ExprTemplateParseError) as cm:
+            ExprTemplate.from_str(r"to_csv(r'*')")
+        self.assertEqual(
+            cm.exception.args,
             ("invalid regular expression r'*': nothing to repeat at position 0",),
         )
 
@@ -50,12 +54,6 @@ class ExprTemplateTestCase(unittest.TestCase):
             patterns: typing.List[str]
 
         for case in [
-            Case(
-                r"r'.+\.csv'",
-                ast.Constant(r".+\.csv"),
-                re.compile(r"^.+\.csv$"),
-                [],
-            ),
             Case(
                 r"load_csv('.+\\.csv')",
                 ast.Call(
@@ -98,9 +96,9 @@ class ExprTemplateTestCase(unittest.TestCase):
 
         for idx, case in enumerate(
             [
-                Case(r"r'.+\.csv'", "'abc.csv'", "abc.csv"),
-                Case(r"r'.+\.csv'", "'abc.csvl'", None),
-                Case(r"r'.+\.csv'", "'abc.det'", None),
+                Case(r"read_csv(r'.+\.csv')", "read_csv('abc.csv')", "abc.csv"),
+                Case(r"read_csv(r'.+\.csv')", "read_csv('abc.csvl')", None),
+                Case(r"read_csv(r'.+\.csv')", "read_csv('abc.det')", None),
                 Case(r"`*`.to_csv(r'.+\.csv')", "df.to_csv('abc.csv')", "abc.csv"),
                 Case(
                     r"`*`.to_csv(r'.+\.csv')",

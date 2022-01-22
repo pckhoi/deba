@@ -5,8 +5,7 @@ import ast
 from fnmatch import fnmatchcase
 
 from attrs import define, field
-from numpy import isin
-from dirk.attrs_utils import field_transformer
+from dirk.attrs_utils import field_transformer, doc
 
 
 class ExprTemplateParseError(ValueError):
@@ -25,8 +24,16 @@ class ExprTemplate(object):
     @node.validator
     def is_expr_valid(self, attr, value: ast.AST):
         str_count = 0
+        if not isinstance(value, ast.Call):
+            raise ExprTemplateParseError(
+                "expression must be a function call, found %s" % type(value)
+            )
         for node in ast.walk(value):
-            if isinstance(node, ast.Constant) and type(node.value) is str:
+            if isinstance(node, ast.Constant):
+                if type(node.value) is not str:
+                    raise ExprTemplateParseError(
+                        "expect exactly 1 string constant, found %s" % type(node.value)
+                    )
                 str_count += 1
                 try:
                     re.compile(node.value)
@@ -38,22 +45,24 @@ class ExprTemplate(object):
                 s = s if s[-1] == "$" else s + "$"
                 self.file_pat = re.compile(s)
             elif isinstance(node, ast.Call):
+                args = getattr(node, "args", [])
+                keywords = getattr(node, "keywords", [])
                 if (
-                    (len(node.args) == 0 and len(node.keywords) == 0)
-                    or len(node.args) > 1
-                    or len(node.keywords) > 1
+                    (len(args) == 0 and len(keywords) == 0)
+                    or len(args) > 1
+                    or len(keywords) > 1
                 ):
                     raise ExprTemplateParseError(
                         "function call must have exactly one argument or one keyword argument"
                     )
         if str_count != 1:
             raise ExprTemplateParseError(
-                "expect exactly 1 string in expression template, found %d" % str_count
+                "expect exactly 1 string, found %d" % str_count
             )
 
     @classmethod
     def from_str(cls, text: str) -> "ExprTemplate":
-        t = cls()
+        patterns = []
         while True:
             try:
                 mod = ast.parse(text)
@@ -72,10 +81,10 @@ class ExprTemplate(object):
                     pattern = line[e.offset : next_backtick]
                     lines[e.lineno - 1] = "%sdirk_backtick_pat_%03d%s" % (
                         line[: e.offset - 1],
-                        len(t.patterns),
+                        len(patterns),
                         line[next_backtick + 1 :],
                     )
-                    t.patterns.append(pattern)
+                    patterns.append(pattern)
                     text = "\n".join(lines)
                 else:
                     raise
@@ -84,8 +93,7 @@ class ExprTemplate(object):
                     raise ExprTemplateParseError(
                         "expect exactly 1 expression, found %d" % len(mod.body)
                     )
-                t.node = mod.body[0].value
-                return t
+                return cls(patterns=patterns, node=mod.body[0].value)
 
     def compare_ast(self, node1: ast.AST, node2: ast.AST) -> typing.Tuple[str, bool]:
         if type(node1) is not type(node2):
@@ -159,3 +167,11 @@ class ExprTemplate(object):
         s, ok = self.compare_ast(self.node, node)
         if ok:
             return s
+
+
+@define(field_transformer=field_transformer(globals()))
+class Expressions(object):
+    """Expression templates."""
+
+    inputs: typing.List[ExprTemplate] = doc("input expression templates")
+    outputs: typing.List[ExprTemplate] = doc("output expression templates")

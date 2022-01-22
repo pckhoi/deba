@@ -1,8 +1,11 @@
 import typing
+import pathlib
 
 from attrs import define
 
 from dirk.attrs_utils import field_transformer, doc
+from dirk.serialize import yaml_load
+from dirk.expr import Expressions
 from dirk.files.file import File
 from dirk.files.files_provider import FilesProvider
 
@@ -49,6 +52,7 @@ class Config(object):
     stages: typing.List[Stage] = doc(
         "list of execution stages. The order of this list is also the order of execution. What this mean concretely is that scripts from a stage can only take output from earlier stages or the same stage as input."
     )
+    expressions: Expressions = doc("expression templates")
     overrides: typing.List[ExecutionRule] = doc(
         "list of make rule overrides. If a make rule with the same targets exists, replace it with the corresponding rule defined here."
     )
@@ -58,4 +62,31 @@ class Config(object):
     files_from: typing.List[FilesProvider] = doc(
         "list of external files providers that dirk can consult and discover more files"
     )
-    data_dir: str = doc("keep all generated data in this folder", default="data")
+    python_path: typing.List[str] = doc(
+        "additional search paths for module files. The directory that contains dirk.yaml file will be prepended to this list. This list is then concatenated as PYTHONPATH env var during script execution."
+    )
+    data_dir: str = doc(
+        "keep all generated data in this folder",
+        default="data",
+        converter=lambda s: s if type(s) is not str else s.strip("/"),
+        required=True,
+    )
+
+
+_conf = None
+
+
+def get_config() -> Config:
+    global _conf
+    if _conf is not None:
+        return _conf
+    for name in ["dirk.yaml", "dirk.yml"]:
+        try:
+            with open(name, "r") as f:
+                _conf = yaml_load(f.read(), Config)
+            return _conf
+        except FileNotFoundError:
+            continue
+    raise FileNotFoundError(
+        "dirk config file not found: %s" % (pathlib.Path().cwd() / "dirk.yaml")
+    )

@@ -6,6 +6,7 @@ from fnmatch import fnmatchcase
 
 from attrs import define, field
 from dirk.attrs_utils import field_transformer, doc
+from dirk.deps.node import Scopes
 
 
 class ExprTemplateParseError(ValueError):
@@ -95,9 +96,30 @@ class ExprTemplate(object):
                     )
                 return cls(patterns=patterns, node=mod.body[0].value)
 
-    def compare_ast(self, node1: ast.AST, node2: ast.AST) -> typing.Tuple[str, bool]:
+    def match_constant(
+        self, node1: ast.Constant, node2: ast.Constant
+    ) -> typing.Tuple[str, bool]:
+        if type(node1.value) is str and type(node2.value) is str:
+            m = self.file_pat.match(node2.value)
+            if m is None:
+                return "", False
+            return node2.value, True
+        return "", node1.value == node2.value
+
+    def match_ast(
+        self, scopes: Scopes, node1: ast.AST, node2: ast.AST
+    ) -> typing.Tuple[str, bool]:
+        if isinstance(node1, ast.Constant):
+            if isinstance(node2, ast.Constant):
+                return self.match_constant(node1, node2)
+            node = scopes.dereference(node2)
+            if node is None or not isinstance(node.t, ast.Constant):
+                return "", False
+            return self.match_constant(node1, node.t)
+
         if type(node1) is not type(node2):
             return "", False
+
         if isinstance(node1, ast.AST):
             if isinstance(node1, ast.Name):
                 if type(node1.ctx) is not type(node2.ctx):
@@ -109,21 +131,14 @@ class ExprTemplate(object):
                     return "", False
                 pat = self.patterns[int(m.group(1))]
                 return "", fnmatchcase(node2.id, pat)
-            elif isinstance(node1, ast.Constant):
-                if type(node1.value) is str and type(node2.value) is str:
-                    m = self.file_pat.match(node2.value)
-                    if m is None:
-                        return "", False
-                    return node2.value, True
-                return "", node1.value == node2.value
             elif isinstance(node1, ast.Call):
-                _, ok = self.compare_ast(node1.func, node2.func)
+                _, ok = self.match_ast(scopes, node1.func, node2.func)
                 if not ok:
                     return "", False
                 s = ""
                 if len(node1.args) > 0:
                     for arg in node2.args:
-                        v, ok = self.compare_ast(node1.args[0], arg)
+                        v, ok = self.match_ast(scopes, node1.args[0], arg)
                         if ok:
                             if v != "":
                                 s = v
@@ -132,7 +147,7 @@ class ExprTemplate(object):
                         return "", False
                 elif len(node1.keywords) > 0:
                     for kw in node2.keywords:
-                        v, ok = self.compare_ast(node1.keywords[0], kw)
+                        v, ok = self.match_ast(scopes, node1.keywords[0], kw)
                         if ok:
                             if v != "":
                                 s = v
@@ -141,10 +156,8 @@ class ExprTemplate(object):
                         return "", False
                 return s, True
             s = ""
-            for k, v in vars(node1).items():
-                if k in ("lineno", "col_offset", "end_lineno", "end_col_offset"):
-                    continue
-                v, ok = self.compare_ast(v, getattr(node2, k))
+            for k, v in ast.iter_fields(node1):
+                v, ok = self.match_ast(scopes, v, getattr(node2, k))
                 if not ok:
                     return "", False
                 elif v != "":
@@ -153,7 +166,8 @@ class ExprTemplate(object):
         elif isinstance(node1, list):
             s = ""
             for v, ok in itertools.starmap(
-                self.compare_ast, itertools.zip_longest(node1, node2)
+                lambda x, y: self.match_ast(scopes, x, y),
+                itertools.zip_longest(node1, node2),
             ):
                 if not ok:
                     return "", False
@@ -163,15 +177,25 @@ class ExprTemplate(object):
         else:
             return "", node1 == node2
 
-    def match_node(self, node: ast.AST) -> typing.Union[None, str]:
-        s, ok = self.compare_ast(self.node, node)
+    def match_node(self, scopes: Scopes, node: ast.AST) -> typing.Union[None, str]:
+        s, ok = self.match_ast(scopes, self.node, node)
         if ok:
             return s
+
+
+def expr_templates(
+    l: typing.Union[typing.List[str], None]
+) -> typing.List[ExprTemplate]:
+    return None if l is None else [ExprTemplate.from_str(s) for s in l]
 
 
 @define(field_transformer=field_transformer(globals()))
 class Expressions(object):
     """Expression templates."""
 
-    inputs: typing.List[ExprTemplate] = doc("input expression templates")
-    outputs: typing.List[ExprTemplate] = doc("output expression templates")
+    inputs: typing.List[ExprTemplate] = doc(
+        "input expression templates", converter=expr_templates
+    )
+    outputs: typing.List[ExprTemplate] = doc(
+        "output expression templates", converter=expr_templates
+    )

@@ -5,7 +5,7 @@ from attrs import define
 
 from dirk.attrs_utils import field_transformer, doc
 from dirk.serialize import yaml_load
-from dirk.expr import Expressions
+from dirk.deps.expr import Expressions
 from dirk.files.file import File
 from dirk.files.files_provider import FilesProvider
 

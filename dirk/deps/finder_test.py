@@ -1,39 +1,14 @@
+from importlib.machinery import PathFinder
 import typing
 import os
 import tempfile
 import ast
 
-from dirk.modules import Node, NodeFactory
+from dirk.deps.finder import Node, DepsFinder, trim_suffix
 from dirk.test_utils import ASTTestCase
 
 
-class NodeTestCase(ASTTestCase):
-    def test_get_descendant(self):
-        const_ast = ast.Constant(value=3)
-        classdef_ast = ast.ClassDef(
-            "ABC",
-            body=[
-                ast.Assign(
-                    targets=[ast.Name("a", ctx=ast.Store())],
-                    value=const_ast,
-                )
-            ],
-        )
-        module_ast = ast.Module([classdef_ast])
-        node = Node(
-            module_ast,
-            children={"ABC": Node(classdef_ast, children={"a": Node(const_ast)})},
-        )
-        self.assertEqual(
-            node.get_descendant("ABC"),
-            Node(classdef_ast, children={"a": Node(const_ast)}),
-        )
-        self.assertEqual(node.get_descendant("ABC.a"), Node(const_ast))
-        self.assertIsNone(node.get_descendant("non_existent"))
-        self.assertIsNone(node.get_descendant("ABC.non_existent"))
-
-
-class NodeFactoryTestCase(ASTTestCase):
+class DepsFinderTestCase(ASTTestCase):
     def setUp(self):
         super().setUp()
         self.maxDiff = None
@@ -51,52 +26,65 @@ class NodeFactoryTestCase(ASTTestCase):
         with open(self.file_path(filename), "w") as f:
             f.write("\n".join(lines))
 
-    def assertNodeEqual(self, a: typing.Union[Node, None], b: typing.Union[Node, None]):
+    def assertNodeEqual(
+        self,
+        a: typing.Union[Node, None],
+        b: typing.Union[Node, None],
+        msg: typing.Union[str, None] = None,
+    ):
         if a is None or b is None:
-            self.assertEqual(a, b)
+            self.assertEqual(a, b, msg)
         else:
             self.assertASTEqual(a.t, b.t)
+            if b.spec is None:
+                print("a:", ast.dump(a.t), a.spec)
+                print("b:", ast.dump(b.t), b.spec)
+            self.assertEqual(a.spec, b.spec, msg)
             if b.children is None:
-                self.assertIsNone(a.children)
+                self.assertIsNone(a.children, msg)
             else:
                 for k in b.children:
                     if k not in a.children:
-                        raise AssertionError("%s not found in %s" % (k, a.children))
+                        raise AssertionError(
+                            "%s: %s not found in %s" % (k, b.children[k], a.children)
+                        )
                 for k, v in a.children.items():
                     if k not in b.children:
-                        raise AssertionError("%s not found in %s" % (k, b.children))
-                    self.assertNodeEqual(v, b.children[k])
+                        raise AssertionError(
+                            "%s: %s not found in %s" % (k, v, b.children)
+                        )
+                    self.assertNodeEqual(v, b.children[k], msg)
 
     def test_find_module(self):
-        factory = NodeFactory([self._dir.name])
+        finder = DepsFinder([self._dir.name])
         self.write_file("a.py", ["a = 1"])
         self.write_file("b/__init__.py", [""])
         self.write_file("b/c.py", ["b = r'abc'"])
 
-        spec = factory.find_module("a")
+        spec = finder.find_module("a")
         self.assertIsNotNone(spec)
         self.assertEqual(spec.origin, self.file_path("a.py"))
 
-        spec = factory.find_module("b")
+        spec = finder.find_module("b")
         self.assertIsNotNone(spec)
         self.assertEqual(spec.origin, self.file_path("b/__init__.py"))
 
-        self.assertIsNone(factory.find_module("c"))
+        self.assertIsNone(finder.find_module("c"))
 
-        spec = factory.find_module("c", spec.submodule_search_locations)
+        spec = finder.find_module("c", spec.submodule_search_locations)
         self.assertIsNotNone(spec)
         self.assertEqual(spec.origin, self.file_path("b/c.py"))
 
-        spec = factory.find_module("b.c")
+        spec = finder.find_module("b.c")
         self.assertIsNotNone(spec)
         self.assertEqual(spec.origin, self.file_path("b/c.py"))
 
-        self.assertIsNone(factory.find_module("b.d"))
+        self.assertIsNone(finder.find_module("b.d"))
 
     def test_parse_module_spec(self):
-        factory = NodeFactory([self._dir.name])
+        finder = DepsFinder([self._dir.name])
         self.write_file("a.py", ["a = 1"])
-        mod = factory.parse_module(self.file_path("a.py"))
+        mod = finder.parse_module(self.file_path("a.py"))
         self.assertASTEqual(
             mod,
             ast.Module(
@@ -112,17 +100,21 @@ class NodeFactoryTestCase(ASTTestCase):
 
         os.remove(self.file_path("a.py"))
         # returns from cache
-        self.assertASTEqual(factory.parse_module(self.file_path("a.py")), mod)
+        self.assertASTEqual(finder.parse_module(self.file_path("a.py")), mod)
+
+    def spec(self, s: str):
+        path, name = os.path.split(self.file_path(s))
+        return PathFinder.find_spec(trim_suffix(name, ".py"), [path])
 
     def test_build_module(self):
-        factory = NodeFactory([self._dir.name])
+        finder = DepsFinder([self._dir.name])
         self.write_file("a.py", ["a = 1"])
         self.write_file("b/__init__.py", ["b = r'b'"])
         self.write_file("b/c.py", ["b = r'abc'"])
         self.write_file("b/d/__init__.py", ["d = r'd'"])
         self.write_file("b/d/e.py", ["e = 2"])
 
-        node_a = factory.build_module("a")
+        node_a = finder.build_module("a")
         self.assertNodeEqual(
             node_a,
             Node(
@@ -135,11 +127,13 @@ class NodeFactoryTestCase(ASTTestCase):
                     ],
                     type_ignores=[],
                 ),
-                {"a": Node(ast.Constant(value=1))},
+                spec=self.spec("a.py"),
+                children={"a": Node(ast.Constant(value=1), self.spec("a.py"))},
             ),
         )
 
-        node_b = factory.build_module("b")
+        node_b = finder.build_module("b")
+        self.assertEqual(node_b.spec.origin, self.file_path("b/__init__.py"))
         self.assertNodeEqual(
             node_b,
             Node(
@@ -152,8 +146,12 @@ class NodeFactoryTestCase(ASTTestCase):
                     ],
                     type_ignores=[],
                 ),
-                {
-                    "b": Node(ast.Constant(value="b")),
+                self.spec("b"),
+                children={
+                    "b": Node(
+                        ast.Constant(value="b"),
+                        self.spec("b"),
+                    ),
                     "c": Node(
                         ast.Module(
                             [
@@ -164,7 +162,10 @@ class NodeFactoryTestCase(ASTTestCase):
                             ],
                             type_ignores=[],
                         ),
-                        {"b": Node(ast.Constant(value="abc"))},
+                        self.spec("b/c.py"),
+                        children={
+                            "b": Node(ast.Constant(value="abc"), self.spec("b/c.py"))
+                        },
                     ),
                     "d": Node(
                         ast.Module(
@@ -176,8 +177,12 @@ class NodeFactoryTestCase(ASTTestCase):
                             ],
                             type_ignores=[],
                         ),
-                        {
-                            "d": Node(ast.Constant(value="d")),
+                        self.spec("b/d"),
+                        children={
+                            "d": Node(
+                                ast.Constant(value="d"),
+                                self.spec("b/d"),
+                            ),
                             "e": Node(
                                 ast.Module(
                                     [
@@ -188,7 +193,13 @@ class NodeFactoryTestCase(ASTTestCase):
                                     ],
                                     type_ignores=[],
                                 ),
-                                {"e": Node(ast.Constant(value=2))},
+                                self.spec("b/d/e.py"),
+                                children={
+                                    "e": Node(
+                                        ast.Constant(value=2),
+                                        self.spec("b/d/e.py"),
+                                    )
+                                },
                             ),
                         },
                     ),
@@ -196,58 +207,124 @@ class NodeFactoryTestCase(ASTTestCase):
             ),
         )
 
-    def test_build_from_ast(self):
-        factory = NodeFactory([self._dir.name])
+    def test_import_package(self):
+        finder = DepsFinder([self._dir.name])
         self.write_file("a.py", ["my_a = 1"])
-        self.write_file("b.py", ["my_b = 2"])
-        self.write_file("c.py", ["import d as d_dash"])
-        self.write_file("d.py", ["my_d = r'abc'"])
-        self.write_file(
-            "z.py",
-            [
-                "import a",
-                "from b import my_b",
-                "from c import d_dash as d_dash_dash",
-                "",
-                "def my_func():",
-                "  pass",
-                "",
-                "class MyClass:",
-                "  a = 'b'",
-                "  c = a",
-                "  d = my_b",
-                "",
-                "  def c(self):",
-                "    pass",
-                "",
-                "  @classmethod",
-                "  def d(cls):",
-                "    pass",
-                "",
-                "  @staticmethod",
-                "  def e():",
-                "    pass",
-                "",
-                "var1 = MyClass.a",
-                "var2 = var1",
-                "e, f = 123, 'def'",
-            ],
+        self.write_file("b.py", ["import a"])
+        self.assertNodeEqual(
+            finder.build_module_from_filepath(self.file_path("b.py")),
+            Node(
+                ast.Module(
+                    body=[ast.Import(names=[ast.alias(name="a")])],
+                    type_ignores=[],
+                ),
+                self.spec("b"),
+                children={
+                    "a": Node(
+                        ast.Module(
+                            [
+                                ast.Assign(
+                                    targets=[ast.Name(id="my_a", ctx=ast.Store())],
+                                    value=ast.Constant(value=1),
+                                )
+                            ],
+                            type_ignores=[],
+                        ),
+                        self.spec("a"),
+                        children={"my_a": Node(ast.Constant(value=1), self.spec("a"))},
+                    )
+                },
+            ),
         )
 
+    def test_import_from(self):
+        finder = DepsFinder([self._dir.name])
+        self.write_file("a.py", ["my_a = 1"])
+        self.write_file("b.py", ["from a import my_a"])
         self.assertNodeEqual(
-            factory.build_module_from_filepath(self.file_path("z.py")),
+            finder.build_module_from_filepath(self.file_path("b.py")),
             Node(
                 ast.Module(
                     body=[
-                        ast.Import(names=[ast.alias(name="a")]),
                         ast.ImportFrom(
-                            module="b", names=[ast.alias(name="my_b")], level=0
+                            module="a", names=[ast.alias(name="my_a")], level=0
                         ),
+                    ],
+                    type_ignores=[],
+                ),
+                self.spec("b"),
+                children={"my_a": Node(ast.Constant(value=1), self.spec("a"))},
+            ),
+        )
+
+    def test_import_as(self):
+        finder = DepsFinder([self._dir.name])
+        self.write_file("a.py", ["my_a = 1"])
+        self.write_file("b.py", ["import a as a_dash"])
+        self.assertNodeEqual(
+            finder.build_module_from_filepath(self.file_path("b.py")),
+            Node(
+                ast.Module(
+                    body=[ast.Import(names=[ast.alias(name="a", asname="a_dash")])],
+                    type_ignores=[],
+                ),
+                self.spec("b"),
+                children={
+                    "a_dash": Node(
+                        ast.Module(
+                            [
+                                ast.Assign(
+                                    targets=[ast.Name(id="my_a", ctx=ast.Store())],
+                                    value=ast.Constant(value=1),
+                                )
+                            ],
+                            type_ignores=[],
+                        ),
+                        self.spec("a"),
+                        children={"my_a": Node(ast.Constant(value=1), self.spec("a"))},
+                    )
+                },
+            ),
+        )
+
+    def test_import_from_as(self):
+        finder = DepsFinder([self._dir.name])
+        self.write_file("a.py", ["my_a = 1"])
+        self.write_file("b.py", ["from a import my_a as my_b"])
+        self.assertNodeEqual(
+            finder.build_module_from_filepath(self.file_path("b.py")),
+            Node(
+                ast.Module(
+                    body=[
                         ast.ImportFrom(
-                            module="c",
-                            names=[ast.alias(name="d_dash", asname="d_dash_dash")],
+                            module="a",
+                            names=[ast.alias(name="my_a", asname="my_b")],
                             level=0,
                         ),
+                    ],
+                    type_ignores=[],
+                ),
+                self.spec("b"),
+                children={"my_b": Node(ast.Constant(value=1), self.spec("a"))},
+            ),
+        )
+
+    def test_func_def(self):
+        self.write_file(
+            "a.py",
+            [
+                "def my_func():",
+                "  pass",
+                "",
+            ],
+        )
+        self.assertNodeEqual(
+            DepsFinder([self._dir.name]).build_module_from_filepath(
+                self.file_path("a.py")
+            ),
+            Node(
+                ast.Module(
+                    body=[
                         ast.FunctionDef(
                             name="my_func",
                             args=ast.arguments(
@@ -260,6 +337,59 @@ class NodeFactoryTestCase(ASTTestCase):
                             body=[ast.Pass()],
                             decorator_list=[],
                         ),
+                    ],
+                    type_ignores=[],
+                ),
+                self.spec("a"),
+                children={
+                    "my_func": Node(
+                        ast.FunctionDef(
+                            name="my_func",
+                            args=ast.arguments(
+                                posonlyargs=[],
+                                args=[],
+                                kwonlyargs=[],
+                                kw_defaults=[],
+                                defaults=[],
+                            ),
+                            body=[ast.Pass()],
+                            decorator_list=[],
+                        ),
+                        self.spec("a"),
+                    )
+                },
+            ),
+        )
+
+    def test_class_def(self):
+        self.write_file(
+            "a.py",
+            [
+                "class MyClass:",
+                "  a = 'b'",
+                "  c = a",
+                "  d = my_b",
+                "",
+                "  def f(self):",
+                "    pass",
+                "",
+                "  @classmethod",
+                "  def g(cls):",
+                "    pass",
+                "",
+                "  @staticmethod",
+                "  def e():",
+                "    pass",
+                "",
+            ],
+        )
+        self.assertNodeEqual(
+            DepsFinder([self._dir.name]).build_module_from_filepath(
+                self.file_path("a.py")
+            ),
+            Node(
+                ast.Module(
+                    body=[
                         ast.ClassDef(
                             name="MyClass",
                             bases=[],
@@ -278,7 +408,7 @@ class NodeFactoryTestCase(ASTTestCase):
                                     value=ast.Name(id="my_b", ctx=ast.Load()),
                                 ),
                                 ast.FunctionDef(
-                                    name="c",
+                                    name="f",
                                     args=ast.arguments(
                                         posonlyargs=[],
                                         args=[ast.arg(arg="self")],
@@ -290,7 +420,7 @@ class NodeFactoryTestCase(ASTTestCase):
                                     decorator_list=[],
                                 ),
                                 ast.FunctionDef(
-                                    name="d",
+                                    name="g",
                                     args=ast.arguments(
                                         posonlyargs=[],
                                         args=[ast.arg(arg="cls")],
@@ -317,6 +447,147 @@ class NodeFactoryTestCase(ASTTestCase):
                                         ast.Name(id="staticmethod", ctx=ast.Load())
                                     ],
                                 ),
+                            ],
+                            decorator_list=[],
+                        ),
+                    ],
+                    type_ignores=[],
+                ),
+                self.spec("a"),
+                children={
+                    "MyClass": Node(
+                        ast.ClassDef(
+                            name="MyClass",
+                            bases=[],
+                            keywords=[],
+                            body=[
+                                ast.Assign(
+                                    targets=[ast.Name(id="a", ctx=ast.Store())],
+                                    value=ast.Constant(value="b"),
+                                ),
+                                ast.Assign(
+                                    targets=[ast.Name(id="c", ctx=ast.Store())],
+                                    value=ast.Name(id="a", ctx=ast.Load()),
+                                ),
+                                ast.Assign(
+                                    targets=[ast.Name(id="d", ctx=ast.Store())],
+                                    value=ast.Name(id="my_b", ctx=ast.Load()),
+                                ),
+                                ast.FunctionDef(
+                                    name="f",
+                                    args=ast.arguments(
+                                        posonlyargs=[],
+                                        args=[ast.arg(arg="self")],
+                                        kwonlyargs=[],
+                                        kw_defaults=[],
+                                        defaults=[],
+                                    ),
+                                    body=[ast.Pass()],
+                                    decorator_list=[],
+                                ),
+                                ast.FunctionDef(
+                                    name="g",
+                                    args=ast.arguments(
+                                        posonlyargs=[],
+                                        args=[ast.arg(arg="cls")],
+                                        kwonlyargs=[],
+                                        kw_defaults=[],
+                                        defaults=[],
+                                    ),
+                                    body=[ast.Pass()],
+                                    decorator_list=[
+                                        ast.Name(id="classmethod", ctx=ast.Load())
+                                    ],
+                                ),
+                                ast.FunctionDef(
+                                    name="e",
+                                    args=ast.arguments(
+                                        posonlyargs=[],
+                                        args=[],
+                                        kwonlyargs=[],
+                                        kw_defaults=[],
+                                        defaults=[],
+                                    ),
+                                    body=[ast.Pass()],
+                                    decorator_list=[
+                                        ast.Name(id="staticmethod", ctx=ast.Load())
+                                    ],
+                                ),
+                            ],
+                            decorator_list=[],
+                        ),
+                        self.spec("a"),
+                        children={
+                            "a": Node(ast.Constant(value="b"), self.spec("a")),
+                            "c": Node(ast.Constant(value="b"), self.spec("a")),
+                            "g": Node(
+                                ast.FunctionDef(
+                                    name="g",
+                                    args=ast.arguments(
+                                        posonlyargs=[],
+                                        args=[ast.arg(arg="cls")],
+                                        kwonlyargs=[],
+                                        kw_defaults=[],
+                                        defaults=[],
+                                    ),
+                                    body=[ast.Pass()],
+                                    decorator_list=[
+                                        ast.Name(id="classmethod", ctx=ast.Load())
+                                    ],
+                                ),
+                                self.spec("a"),
+                            ),
+                            "e": Node(
+                                ast.FunctionDef(
+                                    name="e",
+                                    args=ast.arguments(
+                                        posonlyargs=[],
+                                        args=[],
+                                        kwonlyargs=[],
+                                        kw_defaults=[],
+                                        defaults=[],
+                                    ),
+                                    body=[ast.Pass()],
+                                    decorator_list=[
+                                        ast.Name(id="staticmethod", ctx=ast.Load())
+                                    ],
+                                ),
+                                self.spec("a"),
+                            ),
+                        },
+                    )
+                },
+            ),
+        )
+
+    def test_assignment(self):
+        self.write_file(
+            "a.py",
+            [
+                "class MyClass:",
+                "  a = 'b'",
+                "",
+                "var1 = MyClass.a",
+                "var2 = var1",
+                "e, f = 123, 'def'",
+            ],
+        )
+        self.assertNodeEqual(
+            DepsFinder([self._dir.name]).build_module_from_filepath(
+                self.file_path("a.py")
+            ),
+            Node(
+                ast.Module(
+                    body=[
+                        ast.ClassDef(
+                            name="MyClass",
+                            bases=[],
+                            keywords=[],
+                            body=[
+                                ast.Assign(
+                                    targets=[ast.Name(id="a", ctx=ast.Store())],
+                                    value=ast.Constant(value="b"),
+                                )
                             ],
                             decorator_list=[],
                         ),
@@ -353,46 +624,8 @@ class NodeFactoryTestCase(ASTTestCase):
                     ],
                     type_ignores=[],
                 ),
-                {
-                    "a": Node(
-                        ast.Module(
-                            [
-                                ast.Assign(
-                                    targets=[ast.Name(id="my_a", ctx=ast.Store())],
-                                    value=ast.Constant(value=1),
-                                )
-                            ],
-                            type_ignores=[],
-                        ),
-                        {"my_a": Node(ast.Constant(value=1))},
-                    ),
-                    "my_b": Node(ast.Constant(value=2)),
-                    "d_dash_dash": Node(
-                        ast.Module(
-                            [
-                                ast.Assign(
-                                    targets=[ast.Name(id="my_d", ctx=ast.Store())],
-                                    value=ast.Constant(value="abc"),
-                                )
-                            ],
-                            type_ignores=[],
-                        ),
-                        {"my_d": Node(ast.Constant(value="abc"))},
-                    ),
-                    "my_func": Node(
-                        ast.FunctionDef(
-                            name="my_func",
-                            args=ast.arguments(
-                                posonlyargs=[],
-                                args=[],
-                                kwonlyargs=[],
-                                kw_defaults=[],
-                                defaults=[],
-                            ),
-                            body=[ast.Pass()],
-                            decorator_list=[],
-                        ),
-                    ),
+                self.spec("a"),
+                children={
                     "MyClass": Node(
                         ast.ClassDef(
                             name="MyClass",
@@ -402,101 +635,17 @@ class NodeFactoryTestCase(ASTTestCase):
                                 ast.Assign(
                                     targets=[ast.Name(id="a", ctx=ast.Store())],
                                     value=ast.Constant(value="b"),
-                                ),
-                                ast.Assign(
-                                    targets=[ast.Name(id="c", ctx=ast.Store())],
-                                    value=ast.Name(id="a", ctx=ast.Load()),
-                                ),
-                                ast.Assign(
-                                    targets=[ast.Name(id="d", ctx=ast.Store())],
-                                    value=ast.Name(id="my_b", ctx=ast.Load()),
-                                ),
-                                ast.FunctionDef(
-                                    name="c",
-                                    args=ast.arguments(
-                                        posonlyargs=[],
-                                        args=[ast.arg(arg="self")],
-                                        kwonlyargs=[],
-                                        kw_defaults=[],
-                                        defaults=[],
-                                    ),
-                                    body=[ast.Pass()],
-                                    decorator_list=[],
-                                ),
-                                ast.FunctionDef(
-                                    name="d",
-                                    args=ast.arguments(
-                                        posonlyargs=[],
-                                        args=[ast.arg(arg="cls")],
-                                        kwonlyargs=[],
-                                        kw_defaults=[],
-                                        defaults=[],
-                                    ),
-                                    body=[ast.Pass()],
-                                    decorator_list=[
-                                        ast.Name(id="classmethod", ctx=ast.Load())
-                                    ],
-                                ),
-                                ast.FunctionDef(
-                                    name="e",
-                                    args=ast.arguments(
-                                        posonlyargs=[],
-                                        args=[],
-                                        kwonlyargs=[],
-                                        kw_defaults=[],
-                                        defaults=[],
-                                    ),
-                                    body=[ast.Pass()],
-                                    decorator_list=[
-                                        ast.Name(id="staticmethod", ctx=ast.Load())
-                                    ],
-                                ),
+                                )
                             ],
                             decorator_list=[],
                         ),
-                        {
-                            "a": Node(ast.Constant(value="b")),
-                            "c": Node(ast.Constant(value="b")),
-                            "d": Node(ast.Constant(value=2)),
-                            "d": Node(
-                                ast.FunctionDef(
-                                    name="d",
-                                    args=ast.arguments(
-                                        posonlyargs=[],
-                                        args=[ast.arg(arg="cls")],
-                                        kwonlyargs=[],
-                                        kw_defaults=[],
-                                        defaults=[],
-                                    ),
-                                    body=[ast.Pass()],
-                                    decorator_list=[
-                                        ast.Name(id="classmethod", ctx=ast.Load())
-                                    ],
-                                )
-                            ),
-                            "e": Node(
-                                ast.FunctionDef(
-                                    name="e",
-                                    args=ast.arguments(
-                                        posonlyargs=[],
-                                        args=[],
-                                        kwonlyargs=[],
-                                        kw_defaults=[],
-                                        defaults=[],
-                                    ),
-                                    body=[ast.Pass()],
-                                    decorator_list=[
-                                        ast.Name(id="staticmethod", ctx=ast.Load())
-                                    ],
-                                )
-                            ),
-                        },
+                        self.spec("a"),
+                        children={"a": Node(ast.Constant(value="b"), self.spec("a"))},
                     ),
-                    "var1": Node(ast.Constant(value="b")),
-                    "var2": Node(ast.Constant(value="b")),
-                    "e": Node(ast.Constant(value=123)),
-                    "f": Node(ast.Constant(value="def")),
+                    "var1": Node(ast.Constant(value="b"), self.spec("a")),
+                    "var2": Node(ast.Constant(value="b"), self.spec("a")),
+                    "e": Node(ast.Constant(value=123), self.spec("a")),
+                    "f": Node(ast.Constant(value="def"), self.spec("a")),
                 },
             ),
         )
-        # TODO: add tests for func, async func, class def, assignment

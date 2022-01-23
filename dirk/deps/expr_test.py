@@ -1,9 +1,11 @@
+from importlib.machinery import ModuleSpec
 import re
 import typing
 import ast
 
 from attrs import define
-from dirk.expr import ExprTemplate, ExprTemplateParseError
+from dirk.deps.expr import ExprTemplate, ExprTemplateParseError
+from dirk.deps.node import Node, Scopes
 from dirk.test_utils import ASTTestCase
 
 
@@ -121,5 +123,59 @@ class ExprTemplateTestCase(ASTTestCase):
             et = ExprTemplate.from_str(case.template)
             node = ast.parse(case.source).body[0].value
             self.assertEqual(
-                et.match_node(node), case.file, "(case %d) %s" % (idx, repr(case))
+                et.match_node(Scopes(), node),
+                case.file,
+                "(case %d) %s" % (idx, repr(case)),
+            )
+
+    def test_match_node_with_scopes(self):
+        scopes = Scopes(
+            [
+                {
+                    "a": Node(ast.Constant(value="file_a.csv")),
+                    "MyClass": Node(
+                        ast.ClassDef(
+                            name="MyClass",
+                            bases=[],
+                            keywords=[],
+                            body=[
+                                ast.Assign(
+                                    targets=[ast.Name(id="b", ctx=ast.Store())],
+                                    value=ast.Constant(value="file_b.csv"),
+                                ),
+                                ast.Assign(
+                                    targets=[ast.Name(id="c", ctx=ast.Store())],
+                                    value=ast.Constant(value="file_c.pdf"),
+                                ),
+                            ],
+                        ),
+                        children={
+                            "b": Node(ast.Constant(value="file_b.csv")),
+                            "c": Node(ast.Constant(value="file_c.pdf")),
+                        },
+                    ),
+                }
+            ]
+        )
+
+        @define
+        class Case:
+            template: str
+            source: str
+            file: typing.Union[None, str]
+
+        for idx, case in enumerate(
+            [
+                Case(r"read_csv(r'.+\.csv')", "read_csv(a)", "file_a.csv"),
+                Case(r"read_csv(r'.+\.csv')", "read_csv(d)", None),
+                Case(r"read_csv(r'.+\.csv')", "read_csv(MyClass.b)", "file_b.csv"),
+                Case(r"read_csv(r'.+\.csv')", "read_csv(MyClass.c)", None),
+            ]
+        ):
+            et = ExprTemplate.from_str(case.template)
+            node = ast.parse(case.source).body[0].value
+            self.assertEqual(
+                et.match_node(scopes, node),
+                case.file,
+                "(case %d) %s" % (idx, repr(case)),
             )

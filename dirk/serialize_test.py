@@ -15,6 +15,7 @@ class Person(object):
     birth_date: str = field(default=None)
     height: int = field(default=None)
     scores: typing.List[int] = field(default=None)
+    _gender: str = field(default=None)
 
 
 @define()
@@ -45,6 +46,7 @@ class YAMLTestCase(TestCase):
         obj1 = Person(
             name="John Doe", birth_date="10/02/2000", height=170, scores=[7, 8, 9]
         )
+        obj1._gender = "male"
         yaml_str = yaml_dump(obj1)
         self.assertEqual(
             yaml_str,
@@ -62,6 +64,8 @@ class YAMLTestCase(TestCase):
             ),
         )
         obj2 = yaml_load(yaml_str, Person)
+        self.assertIsNone(obj2._gender)
+        obj1._gender = None
         self.assertEqual(obj1, obj2)
 
     def test_loads_nested(self):

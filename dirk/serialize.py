@@ -31,7 +31,8 @@ def _object_as_dict(obj):
         return {
             to_camel_case(field.name): _object_as_dict(getattr(obj, field.name))
             for field in fields
-            if getattr(obj, field.name, None) is not None
+            if not field.name.startswith("_")
+            and getattr(obj, field.name, None) is not None
         }
     return obj
 

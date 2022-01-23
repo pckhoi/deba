@@ -1,3 +1,5 @@
+import json
+import os
 import typing
 import pathlib
 
@@ -10,7 +12,7 @@ from dirk.files.file import File
 from dirk.files.files_provider import FilesProvider
 
 
-@define(field_transformer=field_transformer(globals()))
+@define(field_transformer=field_transformer(globals()), slots=False)
 class Stage(object):
     """A stage is a group of scripts that have the same order of execution."""
 
@@ -21,6 +23,21 @@ class Stage(object):
     common_dependencies: typing.List[str] = doc(
         "list of common dependencies of every scripts in this stage"
     )
+
+    @property
+    def deps_filepath(self) -> str:
+        return os.path.join(self._conf.deps_dir, "%s.d" % self.name)
+
+    @property
+    def script_dir(self) -> str:
+        return os.path.join(self._conf._root_dir, self.name)
+
+    def scripts(self) -> typing.Iterator[str]:
+        for filename in os.listdir(self.script_dir):
+            if filename in self.ignore:
+                continue
+            if filename.endswith(".py"):
+                yield filename, os.path.join(self.script_dir, filename)
 
 
 @define(field_transformer=field_transformer(globals()))
@@ -46,11 +63,17 @@ class ExecutionRule(object):
 class Config(object):
     """Dirk configurations."""
 
+    stages: typing.List[Stage] = doc(
+        "list of execution stages. The order of this list is also the order of execution. What this mean concretely is that scripts from a stage can only take output from earlier stages or the same stage as input.",
+        required=True,
+    )
+
+    _root_dir: str = doc(
+        "root directory from which to locate data and stage directories"
+    )
+
     targets: typing.List[str] = doc(
         "explicit targets to generate when user run `make dirk`"
-    )
-    stages: typing.List[Stage] = doc(
-        "list of execution stages. The order of this list is also the order of execution. What this mean concretely is that scripts from a stage can only take output from earlier stages or the same stage as input."
     )
     expressions: Expressions = doc("expression templates")
     overrides: typing.List[ExecutionRule] = doc(
@@ -72,6 +95,38 @@ class Config(object):
         required=True,
     )
 
+    def script_search_paths(self) -> typing.List[str]:
+        if self.python_path is None:
+            return [self._root_dir]
+        return [self._root_dir] + self.python_path
+
+    def __attrs_post_init__(self):
+        for stage in self.stages:
+            stage._conf = self
+
+    def get_stage(self, name: str) -> typing.Union[Stage, None]:
+        for stage in self.stages:
+            if stage.name == name:
+                return stage
+
+    def is_data_from_latter_stages(self, stage_name: str, file_name: str) -> bool:
+        check = False
+        file_stage = file_name.split("/")[0]
+        for stage in self.stages:
+            if stage.name == stage_name:
+                check = True
+            elif check and stage.name == file_stage:
+                return True
+        return False
+
+    @property
+    def dirk_dir(self) -> str:
+        return os.path.join(self._root_dir, ".dirk")
+
+    @property
+    def deps_dir(self) -> str:
+        return os.path.join(self.dirk_dir, "deps")
+
 
 _conf = None
 
@@ -84,6 +139,7 @@ def get_config() -> Config:
         try:
             with open(name, "r") as f:
                 _conf = yaml_load(f.read(), Config)
+            _conf._root_dir = os.getcwd()
             return _conf
         except FileNotFoundError:
             continue

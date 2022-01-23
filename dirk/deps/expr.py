@@ -6,7 +6,7 @@ from fnmatch import fnmatchcase
 
 from attrs import define, field
 from dirk.attrs_utils import field_transformer, doc
-from dirk.deps.node import Scopes
+from dirk.deps.node import Stack
 
 
 class ExprTemplateParseError(ValueError):
@@ -107,7 +107,7 @@ class ExprTemplate(object):
         return "", node1.value == node2.value
 
     def match_ast(
-        self, scopes: Scopes, node1: ast.AST, node2: ast.AST
+        self, scopes: Stack, node1: ast.AST, node2: ast.AST
     ) -> typing.Tuple[str, bool]:
         if isinstance(node1, ast.Constant):
             if isinstance(node2, ast.Constant):
@@ -177,7 +177,7 @@ class ExprTemplate(object):
         else:
             return "", node1 == node2
 
-    def match_node(self, scopes: Scopes, node: ast.AST) -> typing.Union[None, str]:
+    def match_node(self, scopes: Stack, node: ast.AST) -> typing.Union[None, str]:
         s, ok = self.match_ast(scopes, self.node, node)
         if ok:
             return s

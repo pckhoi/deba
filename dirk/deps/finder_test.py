@@ -3,6 +3,7 @@ import typing
 import os
 import tempfile
 import ast
+from dirk.deps.expr import ExprTemplate
 
 from dirk.deps.finder import Node, DepsFinder, trim_suffix
 from dirk.test_utils import ASTTestCase
@@ -649,3 +650,41 @@ class DepsFinderTestCase(ASTTestCase):
                 },
             ),
         )
+
+    def test_find_dependencies(self):
+        finder = DepsFinder([self._dir.name])
+        self.write_file("b.py", [
+                "class MyClass:",
+                "  @classmethod",
+                "  def save_file(cls, a):",
+                "    a.to_csv('asd.csv')",
+                "",
+        ])
+        self.write_file(
+            "a.py",
+            [
+                "import b",
+                "",
+                "b_name = 'file_b.csv'",
+                "",
+                "def my_func():",
+                "  return read_csv('qwe.csv')",
+                "",
+                "if __name__ == '__main__':",
+                "  a = read_csv('abc.csv')",
+                "  b = read_csv(b_name)",
+                "  d = my_func()",
+                "",
+                "  a.to_csv('def.csv')",
+                "  c_name = 'file_c.csv'",
+                "  b.to_csv(c_name)",
+                "  b.MyClass.save_file(d)",
+            ],
+        )
+        ins, outs = finder.find_dependencies(
+            self.file_path("a.py"),
+            [ExprTemplate.from_str(r'read_csv(r"\w+\.csv")')],
+            [ExprTemplate.from_str(r'`*`.to_csv(r"\w+\.csv")')],
+        )
+        self.assertEqual(ins, ["abc.csv", "file_b.csv", "qwe.csv"])
+        self.assertEqual(outs, ["def.csv", "file_c.csv", "asd.csv"])

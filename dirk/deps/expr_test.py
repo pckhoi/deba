@@ -5,7 +5,7 @@ import ast
 
 from attrs import define
 from dirk.deps.expr import ExprTemplate, ExprTemplateParseError
-from dirk.deps.node import Node, Scopes
+from dirk.deps.node import Node, Stack
 from dirk.test_utils import ASTTestCase
 
 
@@ -123,13 +123,13 @@ class ExprTemplateTestCase(ASTTestCase):
             et = ExprTemplate.from_str(case.template)
             node = ast.parse(case.source).body[0].value
             self.assertEqual(
-                et.match_node(Scopes(), node),
+                et.match_node(Stack(), node),
                 case.file,
                 "(case %d) %s" % (idx, repr(case)),
             )
 
     def test_match_node_with_scopes(self):
-        scopes = Scopes(
+        scopes = Stack(
             [
                 {
                     "a": Node(ast.Constant(value="file_a.csv")),

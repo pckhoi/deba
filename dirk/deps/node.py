@@ -12,15 +12,24 @@ class Node(object):
     children: typing.Union[typing.Dict[str, "Node"], None] = field(default=None)
 
     def get_descendant(self, dotted_path: str) -> typing.Union["Node", None]:
-        return Scopes([self.children]).get_value(dotted_path)
+        return Stack([self.children]).get_value(dotted_path)
 
 
 @define
-class Scopes(object):
-    layers: typing.List[typing.Dict[str, Node]] = field(factory=list)
+class Stack(object):
+    layers: typing.List[typing.Dict[str, Node]] = field(factory=lambda: [dict()])
 
-    def add_scope(self, scope: typing.Dict[str, Node]) -> "Scopes":
-        return Scopes(self.layers + [scope])
+    def push(self) -> "Stack":
+        return Stack(self.layers + [dict()])
+
+    def pop(self) -> "Stack":
+        return Stack(self.layers[:-1])
+
+    def store(self, key: str, node: Node):
+        self.layers[-1][key] = node
+
+    def current_scope(self) -> dict:
+        return self.layers[-1].copy()
 
     def get_value(self, dotted_path: str) -> typing.Union["Node", None]:
         parts = dotted_path.split(".")

@@ -165,7 +165,7 @@ class NodeFactory(object):
                     if isinstance(t, ast.ClassDef):
                         instmed = True
                         for name in stmt.decorator_list:
-                            if name == "classmethod" or name == "staticmethod":
+                            if name.id in ["classmethod", "staticmethod"]:
                                 instmed = False
                                 break
                         if instmed:

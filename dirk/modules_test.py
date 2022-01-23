@@ -36,6 +36,7 @@ class NodeTestCase(ASTTestCase):
 class NodeFactoryTestCase(ASTTestCase):
     def setUp(self):
         super().setUp()
+        self.maxDiff = None
         self._dir = tempfile.TemporaryDirectory()
 
     def tearDown(self) -> None:
@@ -203,7 +204,34 @@ class NodeFactoryTestCase(ASTTestCase):
         self.write_file("d.py", ["my_d = r'abc'"])
         self.write_file(
             "z.py",
-            ["import a", "from b import my_b", "from c import d_dash as d_dash_dash"],
+            [
+                "import a",
+                "from b import my_b",
+                "from c import d_dash as d_dash_dash",
+                "",
+                "def my_func():",
+                "  pass",
+                "",
+                "class MyClass:",
+                "  a = 'b'",
+                "  c = a",
+                "  d = my_b",
+                "",
+                "  def c(self):",
+                "    pass",
+                "",
+                "  @classmethod",
+                "  def d(cls):",
+                "    pass",
+                "",
+                "  @staticmethod",
+                "  def e():",
+                "    pass",
+                "",
+                "var1 = MyClass.a",
+                "var2 = var1",
+                "e, f = 123, 'def'",
+            ],
         )
 
         self.assertNodeEqual(
@@ -219,6 +247,108 @@ class NodeFactoryTestCase(ASTTestCase):
                             module="c",
                             names=[ast.alias(name="d_dash", asname="d_dash_dash")],
                             level=0,
+                        ),
+                        ast.FunctionDef(
+                            name="my_func",
+                            args=ast.arguments(
+                                posonlyargs=[],
+                                args=[],
+                                kwonlyargs=[],
+                                kw_defaults=[],
+                                defaults=[],
+                            ),
+                            body=[ast.Pass()],
+                            decorator_list=[],
+                        ),
+                        ast.ClassDef(
+                            name="MyClass",
+                            bases=[],
+                            keywords=[],
+                            body=[
+                                ast.Assign(
+                                    targets=[ast.Name(id="a", ctx=ast.Store())],
+                                    value=ast.Constant(value="b"),
+                                ),
+                                ast.Assign(
+                                    targets=[ast.Name(id="c", ctx=ast.Store())],
+                                    value=ast.Name(id="a", ctx=ast.Load()),
+                                ),
+                                ast.Assign(
+                                    targets=[ast.Name(id="d", ctx=ast.Store())],
+                                    value=ast.Name(id="my_b", ctx=ast.Load()),
+                                ),
+                                ast.FunctionDef(
+                                    name="c",
+                                    args=ast.arguments(
+                                        posonlyargs=[],
+                                        args=[ast.arg(arg="self")],
+                                        kwonlyargs=[],
+                                        kw_defaults=[],
+                                        defaults=[],
+                                    ),
+                                    body=[ast.Pass()],
+                                    decorator_list=[],
+                                ),
+                                ast.FunctionDef(
+                                    name="d",
+                                    args=ast.arguments(
+                                        posonlyargs=[],
+                                        args=[ast.arg(arg="cls")],
+                                        kwonlyargs=[],
+                                        kw_defaults=[],
+                                        defaults=[],
+                                    ),
+                                    body=[ast.Pass()],
+                                    decorator_list=[
+                                        ast.Name(id="classmethod", ctx=ast.Load())
+                                    ],
+                                ),
+                                ast.FunctionDef(
+                                    name="e",
+                                    args=ast.arguments(
+                                        posonlyargs=[],
+                                        args=[],
+                                        kwonlyargs=[],
+                                        kw_defaults=[],
+                                        defaults=[],
+                                    ),
+                                    body=[ast.Pass()],
+                                    decorator_list=[
+                                        ast.Name(id="staticmethod", ctx=ast.Load())
+                                    ],
+                                ),
+                            ],
+                            decorator_list=[],
+                        ),
+                        ast.Assign(
+                            targets=[ast.Name(id="var1", ctx=ast.Store())],
+                            value=ast.Attribute(
+                                value=ast.Name(id="MyClass", ctx=ast.Load()),
+                                attr="a",
+                                ctx=ast.Load(),
+                            ),
+                        ),
+                        ast.Assign(
+                            targets=[ast.Name(id="var2", ctx=ast.Store())],
+                            value=ast.Name(id="var1", ctx=ast.Load()),
+                        ),
+                        ast.Assign(
+                            targets=[
+                                ast.Tuple(
+                                    elts=[
+                                        ast.Name(id="e", ctx=ast.Store()),
+                                        ast.Name(id="f", ctx=ast.Store()),
+                                    ],
+                                    ctx=ast.Store(),
+                                )
+                            ],
+                            value=ast.Tuple(
+                                elts=[
+                                    ast.Constant(value=123),
+                                    ast.Constant(value="def"),
+                                ],
+                                ctx=ast.Load(),
+                            ),
                         ),
                     ],
                     type_ignores=[],
@@ -249,6 +379,123 @@ class NodeFactoryTestCase(ASTTestCase):
                         ),
                         {"my_d": Node(ast.Constant(value="abc"))},
                     ),
+                    "my_func": Node(
+                        ast.FunctionDef(
+                            name="my_func",
+                            args=ast.arguments(
+                                posonlyargs=[],
+                                args=[],
+                                kwonlyargs=[],
+                                kw_defaults=[],
+                                defaults=[],
+                            ),
+                            body=[ast.Pass()],
+                            decorator_list=[],
+                        ),
+                    ),
+                    "MyClass": Node(
+                        ast.ClassDef(
+                            name="MyClass",
+                            bases=[],
+                            keywords=[],
+                            body=[
+                                ast.Assign(
+                                    targets=[ast.Name(id="a", ctx=ast.Store())],
+                                    value=ast.Constant(value="b"),
+                                ),
+                                ast.Assign(
+                                    targets=[ast.Name(id="c", ctx=ast.Store())],
+                                    value=ast.Name(id="a", ctx=ast.Load()),
+                                ),
+                                ast.Assign(
+                                    targets=[ast.Name(id="d", ctx=ast.Store())],
+                                    value=ast.Name(id="my_b", ctx=ast.Load()),
+                                ),
+                                ast.FunctionDef(
+                                    name="c",
+                                    args=ast.arguments(
+                                        posonlyargs=[],
+                                        args=[ast.arg(arg="self")],
+                                        kwonlyargs=[],
+                                        kw_defaults=[],
+                                        defaults=[],
+                                    ),
+                                    body=[ast.Pass()],
+                                    decorator_list=[],
+                                ),
+                                ast.FunctionDef(
+                                    name="d",
+                                    args=ast.arguments(
+                                        posonlyargs=[],
+                                        args=[ast.arg(arg="cls")],
+                                        kwonlyargs=[],
+                                        kw_defaults=[],
+                                        defaults=[],
+                                    ),
+                                    body=[ast.Pass()],
+                                    decorator_list=[
+                                        ast.Name(id="classmethod", ctx=ast.Load())
+                                    ],
+                                ),
+                                ast.FunctionDef(
+                                    name="e",
+                                    args=ast.arguments(
+                                        posonlyargs=[],
+                                        args=[],
+                                        kwonlyargs=[],
+                                        kw_defaults=[],
+                                        defaults=[],
+                                    ),
+                                    body=[ast.Pass()],
+                                    decorator_list=[
+                                        ast.Name(id="staticmethod", ctx=ast.Load())
+                                    ],
+                                ),
+                            ],
+                            decorator_list=[],
+                        ),
+                        {
+                            "a": Node(ast.Constant(value="b")),
+                            "c": Node(ast.Constant(value="b")),
+                            "d": Node(ast.Constant(value=2)),
+                            "d": Node(
+                                ast.FunctionDef(
+                                    name="d",
+                                    args=ast.arguments(
+                                        posonlyargs=[],
+                                        args=[ast.arg(arg="cls")],
+                                        kwonlyargs=[],
+                                        kw_defaults=[],
+                                        defaults=[],
+                                    ),
+                                    body=[ast.Pass()],
+                                    decorator_list=[
+                                        ast.Name(id="classmethod", ctx=ast.Load())
+                                    ],
+                                )
+                            ),
+                            "e": Node(
+                                ast.FunctionDef(
+                                    name="e",
+                                    args=ast.arguments(
+                                        posonlyargs=[],
+                                        args=[],
+                                        kwonlyargs=[],
+                                        kw_defaults=[],
+                                        defaults=[],
+                                    ),
+                                    body=[ast.Pass()],
+                                    decorator_list=[
+                                        ast.Name(id="staticmethod", ctx=ast.Load())
+                                    ],
+                                )
+                            ),
+                        },
+                    ),
+                    "var1": Node(ast.Constant(value="b")),
+                    "var2": Node(ast.Constant(value="b")),
+                    "e": Node(ast.Constant(value=123)),
+                    "f": Node(ast.Constant(value="def")),
                 },
             ),
         )

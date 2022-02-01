@@ -31,7 +31,7 @@ $(MD5_DIR)/%.md5: % | $(MD5_DIR)
 $(DEPS_DIR)/%.d: %/*.py $(DIRK_FILE) | $(DEPS_DIR)
 	$(PYTHON) -m dirk deps --stage $*
 
-$(DIRK_DIR)/overrides.d: $(DIRK_FILE) | $(DIRK_DIR)
+$(DIRK_DIR)/main.d: $(DIRK_FILE) | $(DIRK_DIR)
 	$(PYTHON) -m dirk deps
 
 $(DIRK_DIR): ; @-mkdir $@ 2>/dev/null

@@ -25,12 +25,6 @@ class Stage(object):
     )
 
     @property
-    def _common_deps(self):
-        if self.common_dependencies is None:
-            return []
-        return self.common_dependencies
-
-    @property
     def deps_filepath(self) -> str:
         return os.path.join(self._conf.deps_dir, "%s.d" % self.name)
 
@@ -62,7 +56,19 @@ class ExecutionRule(object):
     dependencies: typing.List[str] = doc(
         "list of dependencies that when newer than the targets, trigger the execution"
     )
-    recipe: typing.List[str] = doc("the command to execute")
+    recipe: str = doc("the command to execute")
+
+    @property
+    def target_set(self) -> typing.Set[str]:
+        if type(self.target) is str:
+            return set([self.target])
+        return set(self.target)
+
+    @property
+    def target_str(self) -> str:
+        if type(self.target) is str:
+            return self.target
+        return " ".join(self.target)
 
 
 @define(field_transformer=field_transformer(globals()))
@@ -106,12 +112,6 @@ class Config(object):
             return [self._root_dir]
         return [self._root_dir] + self.python_path
 
-    @property
-    def _overrides(self):
-        if self.overrides is None:
-            return []
-        return self.overrides
-
     def __attrs_post_init__(self):
         for stage in self.stages:
             stage._conf = self
@@ -138,6 +138,10 @@ class Config(object):
     @property
     def deps_dir(self) -> str:
         return os.path.join(self.dirk_dir, "deps")
+
+    @property
+    def main_deps_filepath(self) -> str:
+        return os.path.join(self.dirk_dir, "main.d")
 
 
 _conf = None

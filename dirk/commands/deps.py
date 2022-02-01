@@ -60,23 +60,29 @@ def write_deps(
     validate_inputs(conf, stage, ins, rel_script_path)
     validate_outputs(conf, stage, outs, rel_script_path)
 
-    for idx, exec_rule in enumerate(conf._overrides):
-        if set(exec_rule.target) == set(outs):
-            logging.info(
-                "override #%d matches outputs, skipping script %s" % (idx, script_name)
-            )
-            return
+    if conf.overrides is not None:
+        for idx, exec_rule in enumerate(conf.overrides):
+            if exec_rule.target_set == set(outs):
+                logging.info(
+                    "override #%d matches outputs, skipping script %s"
+                    % (idx, script_name)
+                )
+                return
 
     # write rule for this script
     targets = " ".join(["$(DATA_DIR)/%s" % name for name in outs])
     deps_file.write(
-        "%s: %s %s | $(%s)\n\t$(PYTHON) %s\n\n"
+        "%s &: %s %s | $(%s)\n\t$(PYTHON) %s\n\n"
         % (
             targets,
             "$(MD5_DIR)/%s.md5" % (rel_script_path),
             " ".join(
-                ["data/%s" % name for name in ins]
-                + [str(p) for p in stage._common_deps]
+                ["$(DATA_DIR)/%s" % name for name in ins]
+                + (
+                    [str(p) for p in stage.common_dependencies]
+                    if stage.common_dependencies is not None
+                    else []
+                )
             ),
             dir_var,
             rel_script_path,
@@ -103,6 +109,20 @@ def exec(conf: Config, args: argparse.Namespace):
 
             for script_name, script_path in stage.scripts():
                 write_deps(conf, stage, finder, f, dir_var, script_name, script_path)
+    else:
+        if conf.overrides is not None:
+            os.makedirs(conf.dirk_dir, exist_ok=True)
+            with open(conf.main_deps_filepath, "w") as f:
+                if conf.targets is not None:
+                    f.write(
+                        "all: %s\n\n"
+                        % " ".join("$(DATA_DIR)/%s" % s for s in conf.targets)
+                    )
+                for rule in conf.overrides:
+                    f.write(
+                        "%s &: %s\n\t%s\n\n"
+                        % (rule.target_str, " ".join(rule.dependencies), rule.recipe)
+                    )
 
 
 @subcommand(exec=exec)

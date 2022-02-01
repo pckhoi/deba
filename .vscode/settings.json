@@ -9,6 +9,5 @@
     "coverage.xml",
     "jacoco.xml",
     "coverage.lcov"
-  ],
-  "coverage-gutters.showLineCoverage": true
+  ]
 }

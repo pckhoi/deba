@@ -31,3 +31,10 @@ class TempDirMixin(object):
         os.makedirs(os.path.dirname(self.file_path(filename)), exist_ok=True)
         with open(self.file_path(filename), "w") as f:
             f.write("\n".join(lines))
+
+    def assertFileContent(self, filename: str, lines: typing.List[str]):
+        with open(self.file_path(filename), "r") as f:
+            self.assertEqual(
+                f.read(),
+                "\n".join(lines),
+            )

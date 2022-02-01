@@ -2,5 +2,13 @@
   "python.testing.unittestArgs": ["-v", "-s", "./dirk", "-p", "*_test.py"],
   "python.testing.pytestEnabled": false,
   "python.testing.unittestEnabled": true,
-  "python.formatting.provider": "black"
+  "python.formatting.provider": "black",
+  "coverage-gutters.coverageFileNames": [
+    "lcov.info",
+    "cov.xml",
+    "coverage.xml",
+    "jacoco.xml",
+    "coverage.lcov"
+  ],
+  "coverage-gutters.showLineCoverage": true
 }

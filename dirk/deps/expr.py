@@ -186,7 +186,11 @@ class ExprTemplate(object):
 def expr_templates(
     l: typing.Union[typing.List[str], None]
 ) -> typing.List[ExprTemplate]:
-    return None if l is None else [ExprTemplate.from_str(s) for s in l]
+    return (
+        None
+        if l is None
+        else [s if isinstance(s, ExprTemplate) else ExprTemplate.from_str(s) for s in l]
+    )
 
 
 @define(field_transformer=field_transformer(globals()))

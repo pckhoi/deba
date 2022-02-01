@@ -25,6 +25,12 @@ class Stage(object):
     )
 
     @property
+    def _common_deps(self):
+        if self.common_dependencies is None:
+            return []
+        return self.common_dependencies
+
+    @property
     def deps_filepath(self) -> str:
         return os.path.join(self._conf.deps_dir, "%s.d" % self.name)
 
@@ -34,7 +40,7 @@ class Stage(object):
 
     def scripts(self) -> typing.Iterator[str]:
         for filename in os.listdir(self.script_dir):
-            if filename in self.ignore:
+            if self.ignore is not None and filename in self.ignore:
                 continue
             if filename.endswith(".py"):
                 yield filename, os.path.join(self.script_dir, filename)
@@ -99,6 +105,12 @@ class Config(object):
         if self.python_path is None:
             return [self._root_dir]
         return [self._root_dir] + self.python_path
+
+    @property
+    def _overrides(self):
+        if self.overrides is None:
+            return []
+        return self.overrides
 
     def __attrs_post_init__(self):
         for stage in self.stages:

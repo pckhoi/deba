@@ -1,4 +1,4 @@
-from importlib.machinery import ModuleSpec
+from unittest import TestCase
 import re
 import typing
 import ast
@@ -6,10 +6,10 @@ import ast
 from attrs import define
 from dirk.deps.expr import ExprTemplate, ExprTemplateParseError
 from dirk.deps.node import Node, Stack
-from dirk.test_utils import ASTTestCase
+from dirk.test_utils import ASTMixin
 
 
-class ExprTemplateTestCase(ASTTestCase):
+class ExprTemplateTestCase(ASTMixin, TestCase):
     def test_from_str(self):
         with self.assertRaises(ExprTemplateParseError) as cm:
             ExprTemplate.from_str("`abc*")

@@ -26,7 +26,9 @@ def validate_inputs(
             )
 
 
-def validate_outputs(stage: Stage, outs: typing.List[str], rel_script_path: str):
+def validate_outputs(
+    conf: Config, stage: Stage, outs: typing.List[str], rel_script_path: str
+):
     for filename in outs:
         if not filename.startswith(stage.name + "/"):
             raise InvalidDependencyError(
@@ -56,9 +58,9 @@ def write_deps(
 
     rel_script_path = os.path.join(stage.name, script_name)
     validate_inputs(conf, stage, ins, rel_script_path)
-    validate_outputs(conf, outs, rel_script_path)
+    validate_outputs(conf, stage, outs, rel_script_path)
 
-    for idx, exec_rule in enumerate(conf.overrides):
+    for idx, exec_rule in enumerate(conf._overrides):
         if set(exec_rule.target) == set(outs):
             logging.info(
                 "override #%d matches outputs, skipping script %s" % (idx, script_name)
@@ -74,7 +76,7 @@ def write_deps(
             "$(MD5_DIR)/%s.md5" % (rel_script_path),
             " ".join(
                 ["data/%s" % name for name in ins]
-                + [str(p) for p in stage.common_dependencies]
+                + [str(p) for p in stage._common_deps]
             ),
             dir_var,
             rel_script_path,
@@ -93,6 +95,7 @@ def exec(conf: Config, args: argparse.Namespace):
                 json.dumps([st.name for st in conf.stages]),
             )
         dir_var = "%s_DATA_DIR" % stage.name.upper()
+        os.makedirs(conf.deps_dir, exist_ok=True)
         with open(stage.deps_filepath, "w") as f:
             # write rule for data dir
             f.write("%s := $(DATA_DIR)/%s\n\n" % (dir_var, stage.name))
@@ -103,7 +106,7 @@ def exec(conf: Config, args: argparse.Namespace):
 
 
 @subcommand(exec=exec)
-def add_my_subcommand(
+def add_subcommand(
     subparsers: argparse._SubParsersAction,
 ) -> argparse.ArgumentParser:
     parser = subparsers.add_parser(name="deps")

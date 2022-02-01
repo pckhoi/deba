@@ -1,32 +1,16 @@
 from importlib.machinery import PathFinder
 import typing
+from unittest import TestCase
 import os
 import tempfile
 import ast
 from dirk.deps.expr import ExprTemplate
 
 from dirk.deps.finder import Node, DepsFinder, trim_suffix
-from dirk.test_utils import ASTTestCase
+from dirk.test_utils import ASTMixin, TempDirMixin
 
 
-class DepsFinderTestCase(ASTTestCase):
-    def setUp(self):
-        super().setUp()
-        self.maxDiff = None
-        self._dir = tempfile.TemporaryDirectory()
-
-    def tearDown(self) -> None:
-        self._dir.cleanup()
-        return super().tearDown()
-
-    def file_path(self, filename: str) -> str:
-        return os.path.join(self._dir.name, filename)
-
-    def write_file(self, filename: str, lines: typing.List[str]):
-        os.makedirs(os.path.dirname(self.file_path(filename)), exist_ok=True)
-        with open(self.file_path(filename), "w") as f:
-            f.write("\n".join(lines))
-
+class DepsFinderTestCase(ASTMixin, TempDirMixin, TestCase):
     def assertNodeEqual(
         self,
         a: typing.Union[Node, None],
@@ -653,13 +637,16 @@ class DepsFinderTestCase(ASTTestCase):
 
     def test_find_dependencies(self):
         finder = DepsFinder([self._dir.name])
-        self.write_file("b.py", [
+        self.write_file(
+            "b.py",
+            [
                 "class MyClass:",
                 "  @classmethod",
                 "  def save_file(cls, a):",
                 "    a.to_csv('asd.csv')",
                 "",
-        ])
+            ],
+        )
         self.write_file(
             "a.py",
             [

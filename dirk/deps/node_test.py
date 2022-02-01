@@ -1,10 +1,11 @@
+from unittest import TestCase
 import ast
 
 from dirk.deps.finder import Node
-from dirk.test_utils import ASTTestCase
+from dirk.test_utils import ASTMixin
 
 
-class NodeTestCase(ASTTestCase):
+class NodeTestCase(ASTMixin, TestCase):
     def test_get_descendant(self):
         const_ast = ast.Constant(value=3)
         classdef_ast = ast.ClassDef(

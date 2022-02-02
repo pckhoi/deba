@@ -1,7 +1,12 @@
+import socket
+import threading
 import typing
 import tempfile
 import ast
 import os
+import http.server
+import shutil
+import socketserver
 
 
 class ASTMixin(object):
@@ -15,14 +20,25 @@ class ASTMixin(object):
 
 
 class TempDirMixin(object):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls._dir = tempfile.TemporaryDirectory()
+
     def setUp(self):
         super().setUp()
         self.maxDiff = None
-        self._dir = tempfile.TemporaryDirectory()
+        for filename in os.listdir(self._dir.name):
+            file_path = os.path.join(self._dir.name, filename)
+            if os.path.isfile(file_path) or os.path.islink(file_path):
+                os.unlink(file_path)
+            elif os.path.isdir(file_path):
+                shutil.rmtree(file_path)
 
-    def tearDown(self) -> None:
-        self._dir.cleanup()
-        return super().tearDown()
+    @classmethod
+    def tearDownClass(cls) -> None:
+        cls._dir.cleanup()
+        return super().tearDownClass()
 
     def file_path(self, filename: str) -> str:
         return os.path.join(self._dir.name, filename)
@@ -55,3 +71,34 @@ class TempDirMixin(object):
 
     def assertDirRemoved(self, dirname: str):
         self.assertFalse(os.path.isdir(self.file_path(dirname)))
+
+
+class TCPServer(socketserver.TCPServer):
+    allow_reuse_address = True
+
+
+class StaticServerMixin(TempDirMixin):
+    @classmethod
+    def setUpClass(cls):
+        super().setUpClass()
+        cls._sock = socket.socket()
+        cls._sock.bind(("", 0))
+        cls._port = cls._sock.getsockname()[1]
+        os.chdir(cls._dir.name)
+        cls._httpd = TCPServer(
+            ("localhost", cls._port), http.server.SimpleHTTPRequestHandler
+        )
+        httpd_thread = threading.Thread(target=cls._httpd.serve_forever)
+        httpd_thread.setDaemon(True)
+        httpd_thread.start()
+
+    @classmethod
+    def tearDownClass(cls):
+        cls._httpd.shutdown()
+        cls._httpd.server_close()
+        cls._sock.close()
+        return super().tearDownClass()
+
+    @property
+    def base_url(self):
+        return "http://localhost:%d" % self._port

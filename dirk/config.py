@@ -30,7 +30,7 @@ class Stage(object):
 
     @property
     def script_dir(self) -> str:
-        return os.path.join(self._conf.root_dir, self.name)
+        return os.path.join(self._conf._root_dir, self.name)
 
     def scripts(self) -> typing.Iterator[str]:
         for filename in os.listdir(self.script_dir):
@@ -109,8 +109,8 @@ class Config(object):
 
     def script_search_paths(self) -> typing.List[str]:
         if self.python_path is None:
-            return [self.root_dir]
-        return [self.root_dir] + self.python_path
+            return [self._root_dir]
+        return [self._root_dir] + self.python_path
 
     def __attrs_post_init__(self):
         for stage in self.stages:
@@ -132,8 +132,14 @@ class Config(object):
         return False
 
     @property
+    def _root_dir(self) -> str:
+        if self.root_dir is not None:
+            return self.root_dir
+        return os.getcwd()
+
+    @property
     def dirk_dir(self) -> str:
-        return os.path.join(self.root_dir, ".dirk")
+        return os.path.join(self._root_dir, ".dirk")
 
     @property
     def deps_dir(self) -> str:
@@ -159,8 +165,6 @@ def get_config() -> Config:
         try:
             with open(name, "r") as f:
                 _conf = yaml_load(f.read(), Config)
-            if _conf.root_dir is None:
-                _conf.root_dir = os.getcwd()
             return _conf
         except FileNotFoundError:
             continue

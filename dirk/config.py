@@ -30,7 +30,7 @@ class Stage(object):
 
     @property
     def script_dir(self) -> str:
-        return os.path.join(self._conf._root_dir, self.name)
+        return os.path.join(self._conf.root_dir, self.name)
 
     def scripts(self) -> typing.Iterator[str]:
         for filename in os.listdir(self.script_dir):
@@ -80,7 +80,7 @@ class Config(object):
         required=True,
     )
 
-    _root_dir: str = doc(
+    root_dir: str = doc(
         "root directory from which to locate data and stage directories"
     )
 
@@ -91,10 +91,10 @@ class Config(object):
     overrides: typing.List[ExecutionRule] = doc(
         "list of make rule overrides. If a make rule with the same targets exists, replace it with the corresponding rule defined here."
     )
-    files: typing.List[File] = doc(
+    inputs: typing.Dict[str, typing.List[File]] = doc(
         "list of files that can be pulled and kept up-to-date by dirk"
     )
-    files_from: typing.List[FilesProvider] = doc(
+    inputs_from: typing.List[FilesProvider] = doc(
         "list of external files providers that dirk can consult and discover more files"
     )
     python_path: typing.List[str] = doc(
@@ -109,8 +109,8 @@ class Config(object):
 
     def script_search_paths(self) -> typing.List[str]:
         if self.python_path is None:
-            return [self._root_dir]
-        return [self._root_dir] + self.python_path
+            return [self.root_dir]
+        return [self.root_dir] + self.python_path
 
     def __attrs_post_init__(self):
         for stage in self.stages:
@@ -133,7 +133,7 @@ class Config(object):
 
     @property
     def dirk_dir(self) -> str:
-        return os.path.join(self._root_dir, ".dirk")
+        return os.path.join(self.root_dir, ".dirk")
 
     @property
     def deps_dir(self) -> str:
@@ -142,6 +142,10 @@ class Config(object):
     @property
     def main_deps_filepath(self) -> str:
         return os.path.join(self.dirk_dir, "main.d")
+
+    @property
+    def input_links_dir(self) -> str:
+        return os.path.join(self.dirk_dir, "input_links")
 
 
 _conf = None
@@ -155,7 +159,8 @@ def get_config() -> Config:
         try:
             with open(name, "r") as f:
                 _conf = yaml_load(f.read(), Config)
-            _conf._root_dir = os.getcwd()
+            if _conf.root_dir is None:
+                _conf.root_dir = os.getcwd()
             return _conf
         except FileNotFoundError:
             continue

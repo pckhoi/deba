@@ -32,7 +32,7 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
                 ),
             ],
         )
-        conf._root_dir = self._dir.name
+        conf.root_dir = self._dir.name
 
         self.write_file(
             "clean/a.py",

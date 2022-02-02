@@ -32,9 +32,26 @@ class TempDirMixin(object):
         with open(self.file_path(filename), "w") as f:
             f.write("\n".join(lines))
 
-    def assertFileContent(self, filename: str, lines: typing.List[str]):
+    def mod_time(self, filename: str) -> float:
+        return os.path.getmtime(self.file_path(filename))
+
+    def assertFileContent(self, filename: str, lines: typing.List[str]) -> float:
+        """Asserts file content and returns modified time as seconds since the epoch"""
         with open(self.file_path(filename), "r") as f:
             self.assertEqual(
                 f.read(),
                 "\n".join(lines),
             )
+        return self.mod_time(filename)
+
+    def assertFileModifiedSince(self, filename: str, time: float):
+        self.assertGreater(self.mod_time(filename), time)
+
+    def assertFileNotModifiedSince(self, filename: str, time: float):
+        self.assertEqual(self.mod_time(filename), time)
+
+    def assertFileRemoved(self, filename: str):
+        self.assertFalse(os.path.isfile(self.file_path(filename)))
+
+    def assertDirRemoved(self, dirname: str):
+        self.assertFalse(os.path.isdir(self.file_path(dirname)))

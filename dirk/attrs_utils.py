@@ -75,10 +75,18 @@ DOC_K = "dirk_doc"
 REQUIRED_K = "dirk_required"
 
 
-def doc(doc: str, default=NOTHING, factory=None, converter=None, required=False):
+def doc(
+    doc: str,
+    default=NOTHING,
+    factory=None,
+    converter=None,
+    required=False,
+    validator=None,
+):
     return field(
         metadata={DOC_K: doc, REQUIRED_K: required},
         default=default,
         factory=factory,
         converter=converter,
+        validator=validator,
     )

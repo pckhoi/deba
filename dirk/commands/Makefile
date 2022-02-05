@@ -25,7 +25,6 @@ define check_var
 endef
 
 # calculate md5
-# TODO: replace md5 with a dirk command
 $(MD5_DIR)/%.md5: % | $(MD5_DIR)
 	@-mkdir -p $(dir $@) 2>/dev/null
 	$(PYTHON) -m dirk md5 $< $@

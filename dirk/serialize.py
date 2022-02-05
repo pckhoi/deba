@@ -46,7 +46,7 @@ def represent_attr_object(dumper, data):
 yaml.add_multi_representer(object, represent_attr_object)
 
 
-def yaml_dump(data, **kwargs):
+def yaml_dump(data, **kwargs) -> str:
     return yaml.dump(data, Dumper=Dumper, **kwargs)
 
 

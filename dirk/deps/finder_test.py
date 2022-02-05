@@ -4,7 +4,7 @@ from unittest import TestCase
 import os
 import tempfile
 import ast
-from dirk.deps.expr import ExprTemplate
+from dirk.deps.expr import ExprPattern
 
 from dirk.deps.finder import Node, DepsFinder, trim_suffix
 from dirk.test_utils import ASTMixin, TempDirMixin
@@ -670,8 +670,8 @@ class DepsFinderTestCase(ASTMixin, TempDirMixin, TestCase):
         )
         ins, outs = finder.find_dependencies(
             self.file_path("a.py"),
-            [ExprTemplate.from_str(r'read_csv(r"\w+\.csv")')],
-            [ExprTemplate.from_str(r'`*`.to_csv(r"\w+\.csv")')],
+            [ExprPattern.from_str(r'read_csv(r"\w+\.csv")')],
+            [ExprPattern.from_str(r'`*`.to_csv(r"\w+\.csv")')],
         )
         self.assertEqual(ins, ["abc.csv", "file_b.csv", "qwe.csv"])
         self.assertEqual(outs, ["def.csv", "file_c.csv", "asd.csv"])

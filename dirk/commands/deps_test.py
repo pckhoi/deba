@@ -3,7 +3,7 @@ import argparse
 
 from dirk.commands.deps import add_subcommand
 from dirk.config import Config, ExecutionRule, Stage
-from dirk.deps.expr import Expressions
+from dirk.deps.expr import ExprPatterns
 from dirk.test_utils import TempDirMixin
 
 
@@ -15,7 +15,7 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
         conf = Config(
             stages=[Stage(name="clean", ignore=["d.py"]), Stage(name="fuse")],
             targets=["fuse/data.csv"],
-            expressions=Expressions(
+            patterns=ExprPatterns(
                 inputs=[r'read_csv(".+\\.csv")'],
                 outputs=[r'`*`.to_csv(".+\\.csv")'],
             ),

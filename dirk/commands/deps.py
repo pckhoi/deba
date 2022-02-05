@@ -52,8 +52,8 @@ def write_deps(
 ):
     ins, outs = finder.find_dependencies(
         script_path,
-        conf.expressions.inputs or [],
-        conf.expressions.outputs or [],
+        conf.patterns.inputs or [],
+        conf.patterns.outputs or [],
     )
 
     rel_script_path = os.path.join(stage.name, script_name)
@@ -128,6 +128,11 @@ def exec(conf: Config, args: argparse.Namespace):
 def add_subcommand(
     subparsers: argparse._SubParsersAction,
 ) -> argparse.ArgumentParser:
-    parser = subparsers.add_parser(name="deps")
-    parser.add_argument("--stage", type=str, default="")
+    parser = subparsers.add_parser(name="deps", description="write make rules")
+    parser.add_argument(
+        "--stage",
+        type=str,
+        default="",
+        help="if specified, analyze and write make rules for scripts in this stage. Otherwise, write overriden make rules.",
+    )
     return parser

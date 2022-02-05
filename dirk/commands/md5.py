@@ -26,11 +26,13 @@ def exec(conf: Config, args: argparse.Namespace):
             dst.write(hd)
 
 
-@subcommand(exec=exec)
+@subcommand(exec=exec, open_config=False)
 def add_subcommand(
     subparsers: argparse._SubParsersAction,
 ) -> argparse.ArgumentParser:
-    parser = subparsers.add_parser(name="md5", help="write md5 hash of specified file")
+    parser = subparsers.add_parser(
+        name="md5", description="write md5 hash of specified file"
+    )
     parser.add_argument("source", type=pathlib.Path, help="file to hash")
     parser.add_argument("destination", type=pathlib.Path, help="write md5 to this file")
     return parser

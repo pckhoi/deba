@@ -45,5 +45,7 @@ def exec(conf: Config, args: argparse.Namespace):
 def add_subcommand(
     subparsers: argparse._SubParsersAction,
 ) -> argparse.ArgumentParser:
-    parser = subparsers.add_parser(name="update-input-links")
+    parser = subparsers.add_parser(
+        name="update-input-links", description="update links for input files."
+    )
     return parser

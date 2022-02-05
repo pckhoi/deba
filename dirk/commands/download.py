@@ -13,12 +13,12 @@ def exec(conf: Config, args: argparse.Namespace):
                 f.write(chunk)
 
 
-@subcommand(exec=exec)
+@subcommand(exec=exec, open_config=False)
 def add_subcommand(
     subparsers: argparse._SubParsersAction,
 ) -> argparse.ArgumentParser:
     parser = subparsers.add_parser(
-        name="download", help="download a link to specified location"
+        name="download", description="download a link to specified location"
     )
     parser.add_argument("link", type=str, help="link to download")
     parser.add_argument("filename", type=str, help="target file location")

@@ -2,11 +2,11 @@ import os
 import typing
 import pathlib
 
-from attrs import define
+from attrs import define, validators
 
 from dirk.attrs_utils import field_transformer, doc
 from dirk.serialize import yaml_load
-from dirk.deps.expr import Expressions
+from dirk.deps.expr import ExprPatterns
 from dirk.file import File
 
 
@@ -14,7 +14,11 @@ from dirk.file import File
 class Stage(object):
     """A stage is a group of scripts that have the same order of execution."""
 
-    name: str = doc("name of the stage")
+    name: str = doc(
+        "name of the stage",
+        required=True,
+        validator=validators.matches_re(r"^[a-zA-Z][a-zA-Z0-9-_]+$"),
+    )
     ignore: typing.List[str] = doc(
         "list of scripts that will be ignored during dependency analysis"
     )
@@ -85,7 +89,7 @@ class Config(object):
     targets: typing.List[str] = doc(
         "explicit targets to generate when user run `make dirk`"
     )
-    expressions: Expressions = doc("expression templates")
+    patterns: ExprPatterns = doc("expression templates")
     overrides: typing.List[ExecutionRule] = doc(
         "list of make rule overrides. If a make rule with the same targets exists, replace it with the corresponding rule defined here."
     )
@@ -156,13 +160,11 @@ def get_config() -> Config:
     global _conf
     if _conf is not None:
         return _conf
-    for name in ["dirk.yaml", "dirk.yml"]:
-        try:
-            with open(name, "r") as f:
-                _conf = yaml_load(f.read(), Config)
-            return _conf
-        except FileNotFoundError:
-            continue
-    raise FileNotFoundError(
-        "dirk config file not found: %s" % (pathlib.Path().cwd() / "dirk.yaml")
-    )
+    try:
+        with open("dirk.yaml", "r") as f:
+            _conf = yaml_load(f.read(), Config)
+        return _conf
+    except FileNotFoundError:
+        raise FileNotFoundError(
+            "dirk config file not found: %s" % (pathlib.Path().cwd() / "dirk.yaml")
+        )

@@ -14,7 +14,7 @@ class ExprTemplateParseError(ValueError):
 
 
 @define(field_transformer=field_transformer(globals()))
-class ExprTemplate(object):
+class ExprPattern(object):
     node: ast.AST = field()
     file_pat: re.Pattern = field()
     patterns: typing.List[str] = field(factory=list)
@@ -62,7 +62,7 @@ class ExprTemplate(object):
             )
 
     @classmethod
-    def from_str(cls, text: str) -> "ExprTemplate":
+    def from_str(cls, text: str) -> "ExprPattern":
         patterns = []
         while True:
             try:
@@ -126,7 +126,7 @@ class ExprTemplate(object):
                     return "", False
                 if node1.id == node2.id:
                     return "", True
-                m = ExprTemplate.backtick_name_pat.match(node1.id)
+                m = ExprPattern.backtick_name_pat.match(node1.id)
                 if m is None:
                     return "", False
                 pat = self.patterns[int(m.group(1))]
@@ -183,23 +183,21 @@ class ExprTemplate(object):
             return s
 
 
-def expr_templates(
-    l: typing.Union[typing.List[str], None]
-) -> typing.List[ExprTemplate]:
+def expr_templates(l: typing.Union[typing.List[str], None]) -> typing.List[ExprPattern]:
     return (
         None
         if l is None
-        else [s if isinstance(s, ExprTemplate) else ExprTemplate.from_str(s) for s in l]
+        else [s if isinstance(s, ExprPattern) else ExprPattern.from_str(s) for s in l]
     )
 
 
 @define(field_transformer=field_transformer(globals()))
-class Expressions(object):
+class ExprPatterns(object):
     """Expression templates."""
 
-    inputs: typing.List[ExprTemplate] = doc(
+    inputs: typing.List[ExprPattern] = doc(
         "input expression templates", converter=expr_templates
     )
-    outputs: typing.List[ExprTemplate] = doc(
+    outputs: typing.List[ExprPattern] = doc(
         "output expression templates", converter=expr_templates
     )

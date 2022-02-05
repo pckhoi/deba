@@ -6,7 +6,7 @@ import typing
 from attr import define, field
 
 from dirk.deps.node import Node, Stack
-from dirk.deps.expr import ExprTemplate
+from dirk.deps.expr import ExprPattern
 
 
 class ModuleParseError(ValueError):
@@ -194,8 +194,8 @@ class DepsFinder(object):
     def find_dependencies(
         self,
         filepath: str,
-        input_tmpls: typing.List[ExprTemplate],
-        output_tmpls: typing.List[ExprTemplate],
+        input_tmpls: typing.List[ExprPattern],
+        output_tmpls: typing.List[ExprPattern],
     ) -> typing.Tuple[typing.List[str], typing.List[str]]:
         module_node = self.build_module_from_filepath(filepath)
         stack = Stack()
@@ -217,8 +217,8 @@ class DepsFinder(object):
         node: ast.AST,
         spec: ModuleSpec,
         stack: Stack,
-        input_tmpls: typing.List[ExprTemplate],
-        output_tmpls: typing.List[ExprTemplate],
+        input_tmpls: typing.List[ExprPattern],
+        output_tmpls: typing.List[ExprPattern],
     ) -> typing.Tuple[typing.List[str], typing.List[str]]:
         inputs, outputs = [], []
         for stmt in node.body:

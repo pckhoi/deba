@@ -4,7 +4,7 @@ import typing
 import ast
 
 from attrs import define
-from dirk.deps.expr import ExprTemplate, ExprTemplateParseError
+from dirk.deps.expr import ExprPattern, ExprTemplateParseError
 from dirk.deps.node import Node, Stack
 from dirk.test_utils import ASTMixin
 
@@ -12,18 +12,18 @@ from dirk.test_utils import ASTMixin
 class ExprTemplateTestCase(ASTMixin, TestCase):
     def test_from_str(self):
         with self.assertRaises(ExprTemplateParseError) as cm:
-            ExprTemplate.from_str("`abc*")
+            ExprPattern.from_str("`abc*")
         self.assertEqual(
             cm.exception.args, ("backtick pattern not closed at line 1, offset 1",)
         )
 
         with self.assertRaises(ExprTemplateParseError) as cm:
-            ExprTemplate.from_str("abc\n123")
+            ExprPattern.from_str("abc\n123")
         self.assertEqual(cm.exception.args, ("expect exactly 1 expression, found 2",))
 
         for s in ["abc('d', 'e')", "abc()", "abc(de=123, qw='asd')"]:
             with self.assertRaises(ExprTemplateParseError) as cm:
-                ExprTemplate.from_str(s)
+                ExprPattern.from_str(s)
             self.assertEqual(
                 cm.exception.args,
                 (
@@ -32,21 +32,21 @@ class ExprTemplateTestCase(ASTMixin, TestCase):
             )
 
         with self.assertRaises(ExprTemplateParseError) as cm:
-            ExprTemplate.from_str(r"r'*'")
+            ExprPattern.from_str(r"r'*'")
         self.assertEqual(
             cm.exception.args,
             ("expression must be a function call, found <class 'ast.Constant'>",),
         )
 
         with self.assertRaises(ExprTemplateParseError) as cm:
-            ExprTemplate.from_str(r"to_csv(r'*')")
+            ExprPattern.from_str(r"to_csv(r'*')")
         self.assertEqual(
             cm.exception.args,
             ("invalid regular expression r'*': nothing to repeat at position 0",),
         )
 
         with self.assertRaises(SyntaxError):
-            ExprTemplate.from_str(r"@@")
+            ExprPattern.from_str(r"@@")
 
         @define
         class Case:
@@ -84,7 +84,7 @@ class ExprTemplateTestCase(ASTMixin, TestCase):
                 ["*"],
             ),
         ]:
-            et = ExprTemplate.from_str(case.s)
+            et = ExprPattern.from_str(case.s)
             self.assertASTEqual(et.node, case.expr)
             self.assertEqual(et.file_pat, case.file_pat, repr(case))
             self.assertEqual(et.patterns, case.patterns, repr(case))
@@ -120,7 +120,7 @@ class ExprTemplateTestCase(ASTMixin, TestCase):
                 ),
             ]
         ):
-            et = ExprTemplate.from_str(case.template)
+            et = ExprPattern.from_str(case.template)
             node = ast.parse(case.source).body[0].value
             self.assertEqual(
                 et.match_node(Stack(), node),
@@ -172,7 +172,7 @@ class ExprTemplateTestCase(ASTMixin, TestCase):
                 Case(r"read_csv(r'.+\.csv')", "read_csv(MyClass.c)", None),
             ]
         ):
-            et = ExprTemplate.from_str(case.template)
+            et = ExprPattern.from_str(case.template)
             node = ast.parse(case.source).body[0].value
             self.assertEqual(
                 et.match_node(scopes, node),

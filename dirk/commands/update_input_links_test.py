@@ -3,7 +3,7 @@ import argparse
 
 from dirk.commands.update_input_links import add_subcommand
 from dirk.config import Config, Stage
-from dirk.files.file import File
+from dirk.file import File
 from dirk.test_utils import TempDirMixin
 
 

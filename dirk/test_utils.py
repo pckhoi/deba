@@ -85,9 +85,9 @@ class StaticServerMixin(TempDirMixin):
         cls._sock.bind(("", 0))
         cls._port = cls._sock.getsockname()[1]
         os.chdir(cls._dir.name)
-        cls._httpd = TCPServer(
-            ("localhost", cls._port), http.server.SimpleHTTPRequestHandler
-        )
+        http_handler = http.server.SimpleHTTPRequestHandler
+        http_handler.log_message = lambda a, b, c, d, e: None
+        cls._httpd = TCPServer(("localhost", cls._port), http_handler)
         httpd_thread = threading.Thread(target=cls._httpd.serve_forever)
         httpd_thread.setDaemon(True)
         httpd_thread.start()

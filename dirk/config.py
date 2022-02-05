@@ -1,4 +1,3 @@
-import json
 import os
 import typing
 import pathlib
@@ -8,8 +7,7 @@ from attrs import define
 from dirk.attrs_utils import field_transformer, doc
 from dirk.serialize import yaml_load
 from dirk.deps.expr import Expressions
-from dirk.files.file import File
-from dirk.files.files_provider import FilesProvider
+from dirk.file import File
 
 
 @define(field_transformer=field_transformer(globals()), slots=False)
@@ -67,8 +65,8 @@ class ExecutionRule(object):
     @property
     def target_str(self) -> str:
         if type(self.target) is str:
-            return self.target
-        return " ".join(self.target)
+            return "$(DATA_DIR)/%s" % self.target
+        return " ".join("$(DATA_DIR)/%s" % s for s in self.target)
 
 
 @define(field_transformer=field_transformer(globals()))
@@ -93,9 +91,6 @@ class Config(object):
     )
     inputs: typing.Dict[str, typing.List[File]] = doc(
         "list of files that can be pulled and kept up-to-date by dirk"
-    )
-    inputs_from: typing.List[FilesProvider] = doc(
-        "list of external files providers that dirk can consult and discover more files"
     )
     python_path: typing.List[str] = doc(
         "additional search paths for module files. The directory that contains dirk.yaml file will be prepended to this list. This list is then concatenated as PYTHONPATH env var during script execution."

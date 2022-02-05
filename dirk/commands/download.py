@@ -17,7 +17,9 @@ def exec(conf: Config, args: argparse.Namespace):
 def add_subcommand(
     subparsers: argparse._SubParsersAction,
 ) -> argparse.ArgumentParser:
-    parser = subparsers.add_parser(name="download")
+    parser = subparsers.add_parser(
+        name="download", help="download a link to specified location"
+    )
     parser.add_argument("link", type=str, help="link to download")
     parser.add_argument("filename", type=str, help="target file location")
     return parser

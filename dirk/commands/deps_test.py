@@ -31,7 +31,7 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
                     recipe="my_other_command",
                 ),
             ],
-            root_dir = self._dir.name,
+            root_dir=self._dir.name,
         )
 
         self.write_file(
@@ -67,7 +67,7 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
             [
                 "CLEAN_DATA_DIR := $(DATA_DIR)/clean",
                 "",
-                "$(CLEAN_DATA_DIR): | $(DATA_DIR) ; @-mkdir $@ 2>/dev/null",
+                "$(CLEAN_DATA_DIR): ; @-mkdir -p $@ 2>/dev/null",
                 "",
                 "$(DATA_DIR)/clean/a_output.csv &: $(MD5_DIR)/clean/a.py.md5 $(DATA_DIR)/raw/a_input.csv | $(CLEAN_DATA_DIR)",
                 "\t$(PYTHON) clean/a.py",
@@ -82,12 +82,10 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
         self.assertFileContent(
             ".dirk/main.d",
             [
-                "all: $(DATA_DIR)/fuse/data.csv",
-                "",
-                "clean/b_output.csv &: raw/my_b_input.csv",
+                "$(DATA_DIR)/clean/b_output.csv &: $(DATA_DIR)/raw/my_b_input.csv",
                 "\tmy_command",
                 "",
-                "clean/c.csv &: raw/c.csv",
+                "$(DATA_DIR)/clean/c.csv &: $(DATA_DIR)/raw/c.csv",
                 "\tmy_other_command",
                 "",
                 "",

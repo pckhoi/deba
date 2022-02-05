@@ -105,7 +105,7 @@ def exec(conf: Config, args: argparse.Namespace):
         with open(stage.deps_filepath, "w") as f:
             # write rule for data dir
             f.write("%s := $(DATA_DIR)/%s\n\n" % (dir_var, stage.name))
-            f.write("$(%s): | $(DATA_DIR) ; @-mkdir $@ 2>/dev/null\n\n" % (dir_var))
+            f.write("$(%s): ; @-mkdir -p $@ 2>/dev/null\n\n" % (dir_var))
 
             for script_name, script_path in stage.scripts():
                 write_deps(conf, stage, finder, f, dir_var, script_name, script_path)
@@ -113,15 +113,14 @@ def exec(conf: Config, args: argparse.Namespace):
         if conf.overrides is not None:
             os.makedirs(conf.dirk_dir, exist_ok=True)
             with open(conf.main_deps_filepath, "w") as f:
-                if conf.targets is not None:
-                    f.write(
-                        "all: %s\n\n"
-                        % " ".join("$(DATA_DIR)/%s" % s for s in conf.targets)
-                    )
                 for rule in conf.overrides:
                     f.write(
                         "%s &: %s\n\t%s\n\n"
-                        % (rule.target_str, " ".join(rule.dependencies), rule.recipe)
+                        % (
+                            rule.target_str,
+                            " ".join("$(DATA_DIR)/%s" % d for d in rule.dependencies),
+                            rule.recipe,
+                        )
                     )
 
 

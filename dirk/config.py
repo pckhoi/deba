@@ -5,9 +5,8 @@ import pathlib
 from attrs import define, validators
 
 from dirk.attrs_utils import field_transformer, doc
-from dirk.serialize import yaml_load
+from dirk.serialize import yaml_dump, yaml_load
 from dirk.deps.expr import ExprPatterns
-from dirk.file import File
 
 
 @define(field_transformer=field_transformer(globals()), slots=False)
@@ -22,8 +21,8 @@ class Stage(object):
     ignore: typing.List[str] = doc(
         "list of scripts that will be ignored during dependency analysis"
     )
-    common_dependencies: typing.List[str] = doc(
-        "list of common dependencies of every scripts in this stage"
+    common_prerequisites: typing.List[str] = doc(
+        "list of common prerequisites of every scripts in this stage"
     )
 
     @property
@@ -48,15 +47,15 @@ class ExecutionRule(object):
 
     An execution rule is roughly equivalent to a make rule like this:
 
-        [target]: [dependencies]
+        [target]: [prerequisites]
             [recipe]
     """
 
     target: typing.Union[str, typing.List[str]] = doc(
         "single target or list of targets that can be generated"
     )
-    dependencies: typing.List[str] = doc(
-        "list of dependencies that when newer than the targets, trigger the execution"
+    prerequisites: typing.List[str] = doc(
+        "list of prerequisites that when newer than the targets, trigger the execution"
     )
     recipe: str = doc("the command to execute")
 
@@ -93,9 +92,6 @@ class Config(object):
     overrides: typing.List[ExecutionRule] = doc(
         "list of make rule overrides. If a make rule with the same targets exists, replace it with the corresponding rule defined here."
     )
-    inputs: typing.Dict[str, typing.List[File]] = doc(
-        "list of files that can be pulled and kept up-to-date by dirk"
-    )
     python_path: typing.List[str] = doc(
         "additional search paths for module files. The directory that contains dirk.yaml file will be prepended to this list. This list is then concatenated as PYTHONPATH env var during script execution."
     )
@@ -106,6 +102,7 @@ class Config(object):
         required=True,
     )
 
+    @property
     def script_search_paths(self) -> typing.List[str]:
         if self.python_path is None:
             return [self._root_dir]
@@ -129,6 +126,10 @@ class Config(object):
             elif check and stage.name == file_stage:
                 return True
         return False
+
+    def save(self):
+        with open(os.path.join(self._root_dir, "dirk.yaml"), "w") as f:
+            f.write(yaml_dump(self))
 
     @property
     def _root_dir(self) -> str:

@@ -2,74 +2,92 @@ from importlib.machinery import PathFinder
 import typing
 from unittest import TestCase
 import os
-import tempfile
 import ast
-from dirk.deps.expr import ExprPattern
 
-from dirk.deps.finder import Node, DepsFinder, trim_suffix
+import prettyprinter
+
+from dirk.deps.expr import ExprPattern
+from dirk.deps.module import Node, Module, Package, Loader, trim_suffix
+from dirk.deps.find import build_module_from_filepath, find_dependencies
 from dirk.test_utils import ASTMixin, TempDirMixin
 
 
+prettyprinter.install_extras(["attrs"])
+
+
 class DepsFinderTestCase(ASTMixin, TempDirMixin, TestCase):
-    def assertNodeEqual(
+    def assertDictEqual(
+        self,
+        a: typing.Union[typing.Dict, None],
+        b: typing.Union[typing.Dict, None],
+        msg: typing.Union[str, None] = None,
+    ):
+        if a is None:
+            self.assertIsNone(b, msg)
+        else:
+            for k in b:
+                if k not in a:
+                    raise AssertionError("%s: %s not found in %s" % (k, b[k], a))
+            for k, v in a.items():
+                if k not in b:
+                    raise AssertionError("%s: %s not found in %s" % (k, v, b))
+                self.assertObjectEqual(v, b[k], msg)
+
+    def assertObjectEqual(
         self,
         a: typing.Union[Node, None],
         b: typing.Union[Node, None],
         msg: typing.Union[str, None] = None,
     ):
-        if a is None or b is None:
-            self.assertEqual(a, b, msg)
-        else:
-            self.assertASTEqual(a.t, b.t)
-            if b.spec is None:
-                print("a:", ast.dump(a.t), a.spec)
-                print("b:", ast.dump(b.t), b.spec)
-            self.assertEqual(a.spec, b.spec, msg)
-            if b.children is None:
-                self.assertIsNone(a.children, msg)
-            else:
-                for k in b.children:
-                    if k not in a.children:
-                        raise AssertionError(
-                            "%s: %s not found in %s" % (k, b.children[k], a.children)
-                        )
-                for k, v in a.children.items():
-                    if k not in b.children:
-                        raise AssertionError(
-                            "%s: %s not found in %s" % (k, v, b.children)
-                        )
-                    self.assertNodeEqual(v, b.children[k], msg)
+        try:
+            self.assertEqual(type(a), type(b))
+            if isinstance(a, Package):
+                self.assertDictEqual(a.modules, b.modules)
+            elif isinstance(a, Module):
+                self.assertASTEqual(
+                    a.ast,
+                    b.ast,
+                )
+                self.assertEqual(a.spec, b.spec, msg)
+                self.assertDictEqual(a.children, b.children, msg)
+            elif isinstance(b, Node):
+                self.assertASTEqual(a.ast, b.ast)
+                self.assertDictEqual(a.children, b.children, msg)
+        except Exception:
+            prettyprinter.cpprint(a)
+            prettyprinter.cpprint(b)
+            raise
 
-    def test_find_module(self):
-        finder = DepsFinder([self._dir.name])
+    def test_find_spec(self):
+        loader = Loader([self._dir.name])
         self.write_file("a.py", ["a = 1"])
         self.write_file("b/__init__.py", [""])
         self.write_file("b/c.py", ["b = r'abc'"])
 
-        spec = finder.find_module("a")
+        spec = loader.find_spec("a")
         self.assertIsNotNone(spec)
         self.assertEqual(spec.origin, self.file_path("a.py"))
 
-        spec = finder.find_module("b")
+        spec = loader.find_spec("b")
         self.assertIsNotNone(spec)
         self.assertEqual(spec.origin, self.file_path("b/__init__.py"))
 
-        self.assertIsNone(finder.find_module("c"))
+        self.assertIsNone(loader.find_spec("c"))
 
-        spec = finder.find_module("c", spec.submodule_search_locations)
+        spec = loader.find_spec("c", spec.submodule_search_locations)
         self.assertIsNotNone(spec)
         self.assertEqual(spec.origin, self.file_path("b/c.py"))
 
-        spec = finder.find_module("b.c")
+        spec = loader.find_spec("b.c")
         self.assertIsNotNone(spec)
         self.assertEqual(spec.origin, self.file_path("b/c.py"))
 
-        self.assertIsNone(finder.find_module("b.d"))
+        self.assertIsNone(loader.find_spec("b.d"))
 
     def test_parse_module_spec(self):
-        finder = DepsFinder([self._dir.name])
+        loader = Loader([self._dir.name])
         self.write_file("a.py", ["a = 1"])
-        mod = finder.parse_module(self.file_path("a.py"))
+        mod = loader.parse_ast(self.file_path("a.py"))
         self.assertASTEqual(
             mod,
             ast.Module(
@@ -85,24 +103,24 @@ class DepsFinderTestCase(ASTMixin, TempDirMixin, TestCase):
 
         os.remove(self.file_path("a.py"))
         # returns from cache
-        self.assertASTEqual(finder.parse_module(self.file_path("a.py")), mod)
+        self.assertASTEqual(loader.parse_ast(self.file_path("a.py")), mod)
 
     def spec(self, s: str):
         path, name = os.path.split(self.file_path(s))
         return PathFinder.find_spec(trim_suffix(name, ".py"), [path])
 
-    def test_build_module(self):
-        finder = DepsFinder([self._dir.name])
+    def test_build_module_from_filepath(self):
+        loader = Loader([self._dir.name])
         self.write_file("a.py", ["a = 1"])
         self.write_file("b/__init__.py", ["b = r'b'"])
         self.write_file("b/c.py", ["b = r'abc'"])
         self.write_file("b/d/__init__.py", ["d = r'd'"])
         self.write_file("b/d/e.py", ["e = 2"])
 
-        node_a = finder.build_module("a")
-        self.assertNodeEqual(
+        node_a = build_module_from_filepath(loader, self.file_path("a.py"))
+        self.assertObjectEqual(
             node_a,
-            Node(
+            Module(
                 ast.Module(
                     [
                         ast.Assign(
@@ -117,27 +135,33 @@ class DepsFinderTestCase(ASTMixin, TempDirMixin, TestCase):
             ),
         )
 
-        node_b = finder.build_module("b")
-        self.assertEqual(node_b.spec.origin, self.file_path("b/__init__.py"))
-        self.assertNodeEqual(
+        node_b = build_module_from_filepath(loader, self.file_path("b"))
+        self.assertEqual(
+            node_b.modules["__init__"].spec.origin, self.file_path("b/__init__.py")
+        )
+        self.assertObjectEqual(
             node_b,
-            Node(
-                ast.Module(
-                    [
-                        ast.Assign(
-                            targets=[ast.Name(id="b", ctx=ast.Store())],
-                            value=ast.Constant(value="b"),
-                        )
-                    ],
-                    type_ignores=[],
-                ),
-                self.spec("b"),
-                children={
-                    "b": Node(
-                        ast.Constant(value="b"),
+            Package(
+                {
+                    "__init__": Module(
+                        ast.Module(
+                            [
+                                ast.Assign(
+                                    targets=[ast.Name(id="b", ctx=ast.Store())],
+                                    value=ast.Constant(value="b"),
+                                )
+                            ],
+                            type_ignores=[],
+                        ),
                         self.spec("b"),
+                        children={
+                            "b": Node(
+                                ast.Constant(value="b"),
+                                self.spec("b"),
+                            ),
+                        },
                     ),
-                    "c": Node(
+                    "c": Module(
                         ast.Module(
                             [
                                 ast.Assign(
@@ -152,23 +176,27 @@ class DepsFinderTestCase(ASTMixin, TempDirMixin, TestCase):
                             "b": Node(ast.Constant(value="abc"), self.spec("b/c.py"))
                         },
                     ),
-                    "d": Node(
-                        ast.Module(
-                            [
-                                ast.Assign(
-                                    targets=[ast.Name(id="d", ctx=ast.Store())],
-                                    value=ast.Constant(value="d"),
-                                )
-                            ],
-                            type_ignores=[],
-                        ),
-                        self.spec("b/d"),
-                        children={
-                            "d": Node(
-                                ast.Constant(value="d"),
+                    "d": Package(
+                        {
+                            "__init__": Module(
+                                ast.Module(
+                                    [
+                                        ast.Assign(
+                                            targets=[ast.Name(id="d", ctx=ast.Store())],
+                                            value=ast.Constant(value="d"),
+                                        )
+                                    ],
+                                    type_ignores=[],
+                                ),
                                 self.spec("b/d"),
+                                children={
+                                    "d": Node(
+                                        ast.Constant(value="d"),
+                                        self.spec("b/d"),
+                                    ),
+                                },
                             ),
-                            "e": Node(
+                            "e": Module(
                                 ast.Module(
                                     [
                                         ast.Assign(
@@ -186,26 +214,26 @@ class DepsFinderTestCase(ASTMixin, TempDirMixin, TestCase):
                                     )
                                 },
                             ),
-                        },
+                        }
                     ),
-                },
+                }
             ),
         )
 
     def test_import_package(self):
-        finder = DepsFinder([self._dir.name])
+        loader = Loader([self._dir.name])
         self.write_file("a.py", ["my_a = 1"])
         self.write_file("b.py", ["import a"])
-        self.assertNodeEqual(
-            finder.build_module_from_filepath(self.file_path("b.py")),
-            Node(
+        self.assertObjectEqual(
+            build_module_from_filepath(loader, self.file_path("b.py")),
+            Module(
                 ast.Module(
                     body=[ast.Import(names=[ast.alias(name="a")])],
                     type_ignores=[],
                 ),
-                self.spec("b"),
+                spec=self.spec("b"),
                 children={
-                    "a": Node(
+                    "a": Module(
                         ast.Module(
                             [
                                 ast.Assign(
@@ -215,7 +243,7 @@ class DepsFinderTestCase(ASTMixin, TempDirMixin, TestCase):
                             ],
                             type_ignores=[],
                         ),
-                        self.spec("a"),
+                        spec=self.spec("a"),
                         children={"my_a": Node(ast.Constant(value=1), self.spec("a"))},
                     )
                 },
@@ -223,12 +251,12 @@ class DepsFinderTestCase(ASTMixin, TempDirMixin, TestCase):
         )
 
     def test_import_from(self):
-        finder = DepsFinder([self._dir.name])
+        loader = Loader([self._dir.name])
         self.write_file("a.py", ["my_a = 1"])
         self.write_file("b.py", ["from a import my_a"])
-        self.assertNodeEqual(
-            finder.build_module_from_filepath(self.file_path("b.py")),
-            Node(
+        self.assertObjectEqual(
+            build_module_from_filepath(loader, self.file_path("b.py")),
+            Module(
                 ast.Module(
                     body=[
                         ast.ImportFrom(
@@ -238,24 +266,24 @@ class DepsFinderTestCase(ASTMixin, TempDirMixin, TestCase):
                     type_ignores=[],
                 ),
                 self.spec("b"),
-                children={"my_a": Node(ast.Constant(value=1), self.spec("a"))},
+                children={"my_a": Node(ast.Constant(value=1), self.spec("b"))},
             ),
         )
 
     def test_import_as(self):
-        finder = DepsFinder([self._dir.name])
+        loader = Loader([self._dir.name])
         self.write_file("a.py", ["my_a = 1"])
         self.write_file("b.py", ["import a as a_dash"])
-        self.assertNodeEqual(
-            finder.build_module_from_filepath(self.file_path("b.py")),
-            Node(
+        self.assertObjectEqual(
+            build_module_from_filepath(loader, self.file_path("b.py")),
+            Module(
                 ast.Module(
                     body=[ast.Import(names=[ast.alias(name="a", asname="a_dash")])],
                     type_ignores=[],
                 ),
                 self.spec("b"),
                 children={
-                    "a_dash": Node(
+                    "a_dash": Module(
                         ast.Module(
                             [
                                 ast.Assign(
@@ -273,12 +301,12 @@ class DepsFinderTestCase(ASTMixin, TempDirMixin, TestCase):
         )
 
     def test_import_from_as(self):
-        finder = DepsFinder([self._dir.name])
+        loader = Loader([self._dir.name])
         self.write_file("a.py", ["my_a = 1"])
         self.write_file("b.py", ["from a import my_a as my_b"])
-        self.assertNodeEqual(
-            finder.build_module_from_filepath(self.file_path("b.py")),
-            Node(
+        self.assertObjectEqual(
+            build_module_from_filepath(loader, self.file_path("b.py")),
+            Module(
                 ast.Module(
                     body=[
                         ast.ImportFrom(
@@ -290,7 +318,7 @@ class DepsFinderTestCase(ASTMixin, TempDirMixin, TestCase):
                     type_ignores=[],
                 ),
                 self.spec("b"),
-                children={"my_b": Node(ast.Constant(value=1), self.spec("a"))},
+                children={"my_b": Node(ast.Constant(value=1), self.spec("b"))},
             ),
         )
 
@@ -303,11 +331,10 @@ class DepsFinderTestCase(ASTMixin, TempDirMixin, TestCase):
                 "",
             ],
         )
-        self.assertNodeEqual(
-            DepsFinder([self._dir.name]).build_module_from_filepath(
-                self.file_path("a.py")
-            ),
-            Node(
+        loader = Loader([self._dir.name])
+        self.assertObjectEqual(
+            build_module_from_filepath(loader, self.file_path("a.py")),
+            Module(
                 ast.Module(
                     body=[
                         ast.FunctionDef(
@@ -368,11 +395,10 @@ class DepsFinderTestCase(ASTMixin, TempDirMixin, TestCase):
                 "",
             ],
         )
-        self.assertNodeEqual(
-            DepsFinder([self._dir.name]).build_module_from_filepath(
-                self.file_path("a.py")
-            ),
-            Node(
+        loader = Loader([self._dir.name])
+        self.assertObjectEqual(
+            build_module_from_filepath(loader, self.file_path("a.py")),
+            Module(
                 ast.Module(
                     body=[
                         ast.ClassDef(
@@ -439,6 +465,7 @@ class DepsFinderTestCase(ASTMixin, TempDirMixin, TestCase):
                     type_ignores=[],
                 ),
                 self.spec("a"),
+                loaded=True,
                 children={
                     "MyClass": Node(
                         ast.ClassDef(
@@ -557,11 +584,10 @@ class DepsFinderTestCase(ASTMixin, TempDirMixin, TestCase):
                 "e, f = 123, 'def'",
             ],
         )
-        self.assertNodeEqual(
-            DepsFinder([self._dir.name]).build_module_from_filepath(
-                self.file_path("a.py")
-            ),
-            Node(
+        loader = Loader([self._dir.name])
+        self.assertObjectEqual(
+            build_module_from_filepath(loader, self.file_path("a.py")),
+            Module(
                 ast.Module(
                     body=[
                         ast.ClassDef(
@@ -636,7 +662,7 @@ class DepsFinderTestCase(ASTMixin, TempDirMixin, TestCase):
         )
 
     def test_find_dependencies(self):
-        finder = DepsFinder([self._dir.name])
+        loader = Loader([self._dir.name])
         self.write_file(
             "b.py",
             [
@@ -668,10 +694,139 @@ class DepsFinderTestCase(ASTMixin, TempDirMixin, TestCase):
                 "  b.MyClass.save_file(d)",
             ],
         )
-        ins, outs = finder.find_dependencies(
+        ins, outs = find_dependencies(
+            loader,
             self.file_path("a.py"),
             [ExprPattern.from_str(r'read_csv(r"\w+\.csv")')],
             [ExprPattern.from_str(r'`*`.to_csv(r"\w+\.csv")')],
         )
         self.assertEqual(ins, ["abc.csv", "file_b.csv", "qwe.csv"])
         self.assertEqual(outs, ["def.csv", "file_c.csv", "asd.csv"])
+
+    def test_load_module_from_the_same_package(self):
+        loader = Loader([self._dir.name])
+        self.write_file(
+            "a/b.py",
+            [
+                "from a import c",
+                "",
+            ],
+        )
+        self.write_file(
+            "a/c.py",
+            [
+                'c = "abc"',
+                "",
+            ],
+        )
+        self.write_file(
+            "a/__init__.py",
+            [
+                "from . import b",
+                "",
+            ],
+        )
+        self.assertObjectEqual(
+            build_module_from_filepath(loader, self.file_path("a")),
+            Package(
+                modules={
+                    "__init__": Module(
+                        ast=ast.Module(
+                            body=[ast.ImportFrom(names=[ast.alias(name="b")], level=1)],
+                            type_ignores=[],
+                        ),
+                        spec=self.spec("a"),
+                        children={
+                            "b": Module(
+                                ast=ast.Module(
+                                    body=[
+                                        ast.ImportFrom(
+                                            module="a",
+                                            names=[ast.alias(name="c")],
+                                            level=0,
+                                        )
+                                    ],
+                                    type_ignores=[],
+                                ),
+                                spec=self.spec("a/b"),
+                                children={
+                                    "c": Module(
+                                        ast.Module(
+                                            body=[
+                                                ast.Assign(
+                                                    targets=[
+                                                        ast.Name(
+                                                            id="c", ctx=ast.Store()
+                                                        )
+                                                    ],
+                                                    value=ast.Constant(value="abc"),
+                                                )
+                                            ],
+                                            type_ignores=[],
+                                        ),
+                                        spec=self.spec("a/c"),
+                                        loaded=True,
+                                        children={
+                                            "c": Node(
+                                                ast.Constant(value="abc"),
+                                                spec=self.spec("a/c"),
+                                            )
+                                        },
+                                    )
+                                },
+                                loaded=True,
+                            )
+                        },
+                    ),
+                    "c": Module(
+                        ast.Module(
+                            body=[
+                                ast.Assign(
+                                    targets=[ast.Name(id="c", ctx=ast.Store())],
+                                    value=ast.Constant(value="abc"),
+                                )
+                            ],
+                            type_ignores=[],
+                        ),
+                        spec=self.spec("a/c"),
+                        loaded=True,
+                        children={
+                            "c": Node(ast.Constant(value="abc"), spec=self.spec("a/c"))
+                        },
+                    ),
+                    "b": Module(
+                        ast=ast.Module(
+                            body=[
+                                ast.ImportFrom(
+                                    module="a", names=[ast.alias(name="c")], level=0
+                                )
+                            ],
+                            type_ignores=[],
+                        ),
+                        spec=self.spec("a/b"),
+                        loaded=True,
+                        children={
+                            "c": Module(
+                                ast.Module(
+                                    body=[
+                                        ast.Assign(
+                                            targets=[ast.Name(id="c", ctx=ast.Store())],
+                                            value=ast.Constant(value="abc"),
+                                        )
+                                    ],
+                                    type_ignores=[],
+                                ),
+                                spec=self.spec("a/c"),
+                                loaded=True,
+                                children={
+                                    "c": Node(
+                                        ast.Constant(value="abc"),
+                                        spec=self.spec("a/c"),
+                                    )
+                                },
+                            )
+                        },
+                    ),
+                }
+            ),
+        )

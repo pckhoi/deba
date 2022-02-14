@@ -6,7 +6,7 @@ from fnmatch import fnmatchcase
 
 from attrs import define, field
 from dirk.attrs_utils import field_transformer, doc
-from dirk.deps.node import Stack
+from dirk.deps.module import Stack
 
 
 class ExprTemplateParseError(ValueError):
@@ -16,6 +16,7 @@ class ExprTemplateParseError(ValueError):
 @define(field_transformer=field_transformer(globals()))
 class ExprPattern(object):
     node: ast.AST = field()
+    text: str = field()
     file_pat: re.Pattern = field()
     patterns: typing.List[str] = field(factory=list)
     backtick_name_pat: typing.ClassVar[re.Pattern] = re.compile(
@@ -64,6 +65,7 @@ class ExprPattern(object):
     @classmethod
     def from_str(cls, text: str) -> "ExprPattern":
         patterns = []
+        orig_text = text
         while True:
             try:
                 mod = ast.parse(text)
@@ -94,7 +96,7 @@ class ExprPattern(object):
                     raise ExprTemplateParseError(
                         "expect exactly 1 expression, found %d" % len(mod.body)
                     )
-                return cls(patterns=patterns, node=mod.body[0].value)
+                return cls(text=orig_text, patterns=patterns, node=mod.body[0].value)
 
     def match_constant(
         self, node1: ast.Constant, node2: ast.Constant
@@ -113,9 +115,9 @@ class ExprPattern(object):
             if isinstance(node2, ast.Constant):
                 return self.match_constant(node1, node2)
             node = scopes.dereference(node2)
-            if node is None or not isinstance(node.t, ast.Constant):
+            if node is None or not isinstance(node.ast, ast.Constant):
                 return "", False
-            return self.match_constant(node1, node.t)
+            return self.match_constant(node1, node.ast)
 
         if type(node1) is not type(node2):
             return "", False
@@ -201,3 +203,9 @@ class ExprPatterns(object):
     outputs: typing.List[ExprPattern] = doc(
         "output expression templates", converter=expr_templates
     )
+
+    def as_dict(self) -> typing.Dict:
+        return {
+            "inputs": [obj.text for obj in self.inputs],
+            "outputs": [obj.text for obj in self.outputs],
+        }

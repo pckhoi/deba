@@ -22,12 +22,12 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
             overrides=[
                 ExecutionRule(
                     target="clean/b_output.csv",
-                    dependencies=["raw/my_b_input.csv"],
+                    prerequisites=["raw/my_b_input.csv"],
                     recipe="my_command",
                 ),
                 ExecutionRule(
                     target="clean/c.csv",
-                    dependencies=["raw/c.csv"],
+                    prerequisites=["raw/c.csv"],
                     recipe="my_other_command",
                 ),
             ],
@@ -70,7 +70,7 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
                 "$(CLEAN_DATA_DIR): ; @-mkdir -p $@ 2>/dev/null",
                 "",
                 "$(DATA_DIR)/clean/a_output.csv &: $(MD5_DIR)/clean/a.py.md5 $(DATA_DIR)/raw/a_input.csv | $(CLEAN_DATA_DIR)",
-                "\t$(PYTHON) clean/a.py",
+                "\t$(call execute,clean/a.py)",
                 "",
                 "",
             ],

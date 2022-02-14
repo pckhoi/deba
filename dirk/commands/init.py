@@ -29,15 +29,17 @@ def exec(conf: Config, args: argparse.Namespace):
         stages = [Stage(name=name.strip()) for name in args.stages]
 
     # prompt for targets
-    targets = args.targets
+    targets = []
     if args.targets is None:
         while True:
             cont = input("add a target? (Y/n)")
             if cont != "" and cont.strip().lower() != "y":
                 break
-            targets.append(input("  target:").strip())
+            targets.append(input("  target: ").strip())
         if len(targets) == 0:
             raise ValueError("must add at least 1 target")
+    else:
+        targets = args.targets
 
     # prompt for patterns
     input_patterns = []
@@ -46,7 +48,7 @@ def exec(conf: Config, args: argparse.Namespace):
             cont = input("add an input pattern? (Y/n)")
             if cont != "" and cont.strip().lower() != "y":
                 break
-            input_patterns.append(input("  input pattern:").strip())
+            input_patterns.append(input("  input pattern: ").strip())
         if len(input_patterns) == 0:
             raise ValueError("must add at least 1 input pattern")
     else:
@@ -54,10 +56,10 @@ def exec(conf: Config, args: argparse.Namespace):
     output_patterns = []
     if args.output_patterns is None:
         while True:
-            cont = input("add an input pattern? (Y/n)")
+            cont = input("add an output pattern? (Y/n)")
             if cont != "" and cont.strip().lower() != "y":
                 break
-            output_patterns.append(input("  output pattern:").strip())
+            output_patterns.append(input("  output pattern: ").strip())
         if len(output_patterns) == 0:
             raise ValueError("must add at least 1 output pattern")
     else:
@@ -71,17 +73,20 @@ def exec(conf: Config, args: argparse.Namespace):
     )
     with open(dirk_file, "w") as f:
         f.write(yaml_dump(conf))
-    print("wrote dirk config to %s" % dirk_file)
+    print("wrote dirk config to %s" % dirk_file.name)
 
     # write make config
     mk_file = cwd / "dirk.mk"
-    shutil.copyfile(pathlib.Path(__file__) / "Makefile", mk_file)
-    print("wrote Make config to %s" % mk_file)
+    shutil.copyfile(pathlib.Path(__file__).parent / "Makefile", mk_file)
+    print("wrote Make config to %s" % mk_file.name)
+    with open(cwd / "Makefile", "a+") as f:
+        f.write("\ninclude dirk.mk\n")
+    print("included dirk.mk in Makefile")
 
     # write .gitignore
-    with open(cwd / ".gitignore", "a") as f:
+    with open(cwd / ".gitignore", "a+") as f:
         f.write("\n.dirk\n")
-    print('added entry for ".dirk" to .gitignore')
+    print('added ".dirk" to .gitignore')
 
 
 @subcommand(exec=exec, open_config=False)
@@ -93,25 +98,25 @@ def add_subcommand(
     )
     parser.add_argument(
         "--stages",
-        type="str",
+        type=str,
         nargs="*",
         help="names of execution stages. Each stage is a plain folder that houses scripts that have similar execution order. Execution order among stages follows their order in the config file.",
     )
     parser.add_argument(
         "--targets",
-        type="str",
+        type=str,
         nargs="*",
         help="target files. Each time your run `make dirk`, these files will be updated if any of their dependencies have been updated since.",
     )
     parser.add_argument(
         "--input-patterns",
-        type="str",
+        type=str,
         nargs="*",
         help="input patterns that Dirk uses to find input files for each script",
     )
     parser.add_argument(
         "--output-patterns",
-        type="str",
+        type=str,
         nargs="*",
         help="output patterns that Dirk uses to find output files for each script",
     )

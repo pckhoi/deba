@@ -27,6 +27,8 @@ yaml.emitter.Emitter.process_tag = noop
 
 def _object_as_dict(obj):
     if attr.has(obj.__class__):
+        if hasattr(obj, "as_dict"):
+            return obj.as_dict()
         fields = attr.fields(obj.__class__)
         return {
             to_camel_case(field.name): _object_as_dict(getattr(obj, field.name))
@@ -58,6 +60,8 @@ def yaml_load(s, serializer_cls):
 def _deserialize(data, serializer_cls):
     kwargs = dict()
     fields_dict = attr.fields_dict(serializer_cls)
+    if type(data) is str:
+        return serializer_cls.from_str(data)
     data = [(to_snake_case(k), v) for k, v in data.items()]
     data_stack = [(kwargs, k, fields_dict[k], v) for k, v in data if k != "meta"]
     while len(data_stack) > 0:

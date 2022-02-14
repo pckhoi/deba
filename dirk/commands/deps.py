@@ -8,7 +8,10 @@ from charset_normalizer import logging
 
 from dirk.commands.decorators import subcommand
 from dirk.config import Config, Stage
-from dirk.deps.finder import DepsFinder
+
+# from dirk.deps.finder import DepsFinder
+from dirk.deps.module import Loader
+from dirk.deps.find import find_dependencies
 
 
 class InvalidDependencyError(Exception):
@@ -44,13 +47,14 @@ def validate_outputs(
 def write_deps(
     conf: Config,
     stage: Stage,
-    finder: DepsFinder,
+    loader: Loader,
     deps_file: io.TextIOWrapper,
     dir_var: str,
     script_name: str,
     script_path: str,
 ):
-    ins, outs = finder.find_dependencies(
+    ins, outs = find_dependencies(
+        loader,
         script_path,
         conf.patterns.inputs or [],
         conf.patterns.outputs or [],
@@ -72,15 +76,15 @@ def write_deps(
     # write rule for this script
     targets = " ".join(["$(DATA_DIR)/%s" % name for name in outs])
     deps_file.write(
-        "%s &: %s %s | $(%s)\n\t$(PYTHON) %s\n\n"
+        "%s &: %s %s | $(%s)\n\t$(call execute,%s)\n\n"
         % (
             targets,
             "$(MD5_DIR)/%s.md5" % (rel_script_path),
             " ".join(
                 ["$(DATA_DIR)/%s" % name for name in ins]
                 + (
-                    [str(p) for p in stage.common_dependencies]
-                    if stage.common_dependencies is not None
+                    [str(p) for p in stage.common_prerequisites]
+                    if stage.common_prerequisites is not None
                     else []
                 )
             ),
@@ -92,7 +96,7 @@ def write_deps(
 
 def exec(conf: Config, args: argparse.Namespace):
     if args.stage != "":
-        finder = DepsFinder(conf.script_search_paths())
+        loader = Loader(conf.script_search_paths)
         stage = conf.get_stage(args.stage)
         if stage is None:
             raise ValueError(
@@ -108,7 +112,7 @@ def exec(conf: Config, args: argparse.Namespace):
             f.write("$(%s): ; @-mkdir -p $@ 2>/dev/null\n\n" % (dir_var))
 
             for script_name, script_path in stage.scripts():
-                write_deps(conf, stage, finder, f, dir_var, script_name, script_path)
+                write_deps(conf, stage, loader, f, dir_var, script_name, script_path)
     else:
         if conf.overrides is not None:
             os.makedirs(conf.dirk_dir, exist_ok=True)
@@ -118,7 +122,7 @@ def exec(conf: Config, args: argparse.Namespace):
                         "%s &: %s\n\t%s\n\n"
                         % (
                             rule.target_str,
-                            " ".join("$(DATA_DIR)/%s" % d for d in rule.dependencies),
+                            " ".join("$(DATA_DIR)/%s" % d for d in rule.prerequisites),
                             rule.recipe,
                         )
                     )

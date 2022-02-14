@@ -5,7 +5,7 @@ import ast
 
 from attrs import define
 from dirk.deps.expr import ExprPattern, ExprTemplateParseError
-from dirk.deps.node import Node, Stack
+from dirk.deps.module import Node, Stack
 from dirk.test_utils import ASTMixin
 
 

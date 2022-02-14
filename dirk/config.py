@@ -18,11 +18,14 @@ class Stage(object):
         required=True,
         validator=validators.matches_re(r"^[a-zA-Z][a-zA-Z0-9-_]+$"),
     )
-    ignore: typing.List[str] = doc(
+    ignored_scripts: typing.List[str] = doc(
         "list of scripts that will be ignored during dependency analysis"
     )
     common_prerequisites: typing.List[str] = doc(
         "list of common prerequisites of every scripts in this stage"
+    )
+    ignored_outputs: typing.List[str] = doc(
+        "list of targets that will be ignored (not written to Makefile)"
     )
 
     @property
@@ -35,7 +38,7 @@ class Stage(object):
 
     def scripts(self) -> typing.Iterator[str]:
         for filename in os.listdir(self.script_dir):
-            if self.ignore is not None and filename in self.ignore:
+            if self.ignored_scripts is not None and filename in self.ignored_scripts:
                 continue
             if filename.endswith(".py"):
                 yield filename, os.path.join(self.script_dir, filename)

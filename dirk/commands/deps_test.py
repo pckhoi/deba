@@ -13,7 +13,10 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
         subparsers = parser.add_subparsers()
         add_subcommand(subparsers)
         conf = Config(
-            stages=[Stage(name="clean", ignore=["d.py"]), Stage(name="fuse")],
+            stages=[
+                Stage(name="clean", ignored_scripts=["d.py"]),
+                Stage(name="fuse", ignored_outputs=["duplicates.csv"]),
+            ],
             targets=["fuse/data.csv"],
             patterns=ExprPatterns(
                 inputs=[r'read_csv(".+\\.csv")'],
@@ -58,6 +61,15 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
                 '  df.to_csv("clean/d_output.csv")',
             ],
         )
+        self.write_file(
+            "fuse/a.py",
+            [
+                'if __name__ == "__main__":',
+                '  df = read_csv("clean/b_output.csv")',
+                '  df.to_csv("duplicates.csv")',
+                '  df.to_csv("fuse/data.csv")',
+            ],
+        )
 
         args = parser.parse_args(["deps", "--stage", "clean"])
         args.exec(conf, args)
@@ -70,7 +82,24 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
                 "$(CLEAN_DATA_DIR): ; @-mkdir -p $@ 2>/dev/null",
                 "",
                 "$(DATA_DIR)/clean/a_output.csv &: $(MD5_DIR)/clean/a.py.md5 $(DATA_DIR)/raw/a_input.csv | $(CLEAN_DATA_DIR)",
-                "\t$(call execute,clean/a.py)",
+                "\t$(call dirk_execute,clean/a.py)",
+                "",
+                "",
+            ],
+        )
+
+        args = parser.parse_args(["deps", "--stage", "fuse"])
+        args.exec(conf, args)
+
+        self.assertFileContent(
+            ".dirk/deps/fuse.d",
+            [
+                "FUSE_DATA_DIR := $(DATA_DIR)/fuse",
+                "",
+                "$(FUSE_DATA_DIR): ; @-mkdir -p $@ 2>/dev/null",
+                "",
+                "$(DATA_DIR)/fuse/data.csv &: $(MD5_DIR)/fuse/a.py.md5 $(DATA_DIR)/clean/b_output.csv | $(FUSE_DATA_DIR)",
+                "\t$(call dirk_execute,fuse/a.py)",
                 "",
                 "",
             ],

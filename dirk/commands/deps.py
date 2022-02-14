@@ -60,6 +60,9 @@ def write_deps(
         conf.patterns.outputs or [],
     )
 
+    if stage.ignored_outputs is not None:
+        outs = [s for s in outs if s not in stage.ignored_outputs]
+
     rel_script_path = os.path.join(stage.name, script_name)
     validate_inputs(conf, stage, ins, rel_script_path)
     validate_outputs(conf, stage, outs, rel_script_path)
@@ -76,7 +79,7 @@ def write_deps(
     # write rule for this script
     targets = " ".join(["$(DATA_DIR)/%s" % name for name in outs])
     deps_file.write(
-        "%s &: %s %s | $(%s)\n\t$(call execute,%s)\n\n"
+        "%s &: %s %s | $(%s)\n\t$(call dirk_execute,%s)\n\n"
         % (
             targets,
             "$(MD5_DIR)/%s.md5" % (rel_script_path),

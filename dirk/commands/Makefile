@@ -19,7 +19,7 @@ dirk: $(shell $(PYTHON) -m dirk targets)
 cleandirk:
 	rm -rf $(DIRK_DIR)
 
-define execute
+define dirk_execute
 start_time=$$SECONDS && \
 PYTHONPATH=$(PYTHON_PATH) && \
 echo "running $(1)" | sed $$'s,.*,\e[1;37m&\e[m,' && \

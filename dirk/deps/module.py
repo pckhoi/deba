@@ -127,7 +127,7 @@ class Package(object):
         reader = spec.loader.get_resource_reader()
         if reader is not None:
             for filename in reader.contents():
-                if filename == "__init__.py":
+                if filename in ["__init__.py", "__main__.py"]:
                     continue
                 if filename.endswith(".py"):
                     name = trim_suffix(filename, ".py")
@@ -161,6 +161,12 @@ class Stack(object):
 
     def current_scope(self) -> dict:
         return self.layers[-1].copy()
+
+    def remove(self, key: str):
+        self.layers[-1].pop(key)
+
+    def current_keys(self) -> typing.List[str]:
+        return list(self.layers[-1].keys())
 
     def get_value(self, dotted_path: str) -> typing.Union[object, None]:
         parts = dotted_path.split(".")

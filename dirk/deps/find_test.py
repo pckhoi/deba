@@ -726,6 +726,13 @@ class DepsFinderTestCase(ASTMixin, TempDirMixin, TestCase):
                 "",
             ],
         )
+        self.write_file(
+            "a/__main__.py",
+            [
+                "print('executing')",
+                ""
+            ]
+        )
         self.assertObjectEqual(
             build_module_from_filepath(loader, self.file_path("a")),
             Package(

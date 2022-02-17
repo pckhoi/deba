@@ -12,7 +12,7 @@ from attrs import define, field
 @define
 class Node(object):
     ast: ast.AST
-    spec: typing.Union[ModuleSpec, None] = field(default=None)
+    spec: ModuleSpec
     children: typing.Union[typing.Dict[str, "Node"], None] = field(default=None)
 
     def __getitem__(self, key):

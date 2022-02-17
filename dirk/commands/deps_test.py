@@ -77,11 +77,9 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
         self.assertFileContent(
             ".dirk/deps/clean.d",
             [
-                "CLEAN_DATA_DIR := $(DATA_DIR)/clean",
+                "$(DIRK_DATA_DIR)/clean: ; @-mkdir -p $@ 2>/dev/null",
                 "",
-                "$(CLEAN_DATA_DIR): ; @-mkdir -p $@ 2>/dev/null",
-                "",
-                "$(DATA_DIR)/clean/a_output.csv &: $(MD5_DIR)/clean/a.py.md5 $(DATA_DIR)/raw/a_input.csv | $(CLEAN_DATA_DIR)",
+                "$(DIRK_DATA_DIR)/clean/a_output.csv &: $(DIRK_MD5_DIR)/clean/a.py.md5 $(DIRK_DATA_DIR)/raw/a_input.csv | $(DIRK_DATA_DIR)/clean",
                 "\t$(call dirk_execute,clean/a.py)",
                 "",
                 "",
@@ -94,11 +92,9 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
         self.assertFileContent(
             ".dirk/deps/fuse.d",
             [
-                "FUSE_DATA_DIR := $(DATA_DIR)/fuse",
+                "$(DIRK_DATA_DIR)/fuse: ; @-mkdir -p $@ 2>/dev/null",
                 "",
-                "$(FUSE_DATA_DIR): ; @-mkdir -p $@ 2>/dev/null",
-                "",
-                "$(DATA_DIR)/fuse/data.csv &: $(MD5_DIR)/fuse/a.py.md5 $(DATA_DIR)/clean/b_output.csv | $(FUSE_DATA_DIR)",
+                "$(DIRK_DATA_DIR)/fuse/data.csv &: $(DIRK_MD5_DIR)/fuse/a.py.md5 $(DIRK_DATA_DIR)/clean/b_output.csv | $(DIRK_DATA_DIR)/fuse",
                 "\t$(call dirk_execute,fuse/a.py)",
                 "",
                 "",
@@ -111,10 +107,10 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
         self.assertFileContent(
             ".dirk/main.d",
             [
-                "$(DATA_DIR)/clean/b_output.csv &: $(DATA_DIR)/raw/my_b_input.csv",
+                "$(DIRK_DATA_DIR)/clean/b_output.csv &: $(DIRK_DATA_DIR)/raw/my_b_input.csv",
                 "\tmy_command",
                 "",
-                "$(DATA_DIR)/clean/c.csv &: $(DATA_DIR)/raw/c.csv",
+                "$(DIRK_DATA_DIR)/clean/c.csv &: $(DIRK_DATA_DIR)/raw/c.csv",
                 "\tmy_other_command",
                 "",
                 "",

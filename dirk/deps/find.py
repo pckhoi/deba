@@ -100,7 +100,7 @@ def scan(
                         ins, outs = scan(
                             loader,
                             func.ast,
-                            func.spec.submodule_search_locations,
+                            func.spec,
                             stack.push(),
                             input_tmpls,
                             output_tmpls,

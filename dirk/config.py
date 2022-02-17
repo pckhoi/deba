@@ -71,8 +71,8 @@ class ExecutionRule(object):
     @property
     def target_str(self) -> str:
         if type(self.target) is str:
-            return "$(DATA_DIR)/%s" % self.target
-        return " ".join("$(DATA_DIR)/%s" % s for s in self.target)
+            return "$(DIRK_DATA_DIR)/%s" % self.target
+        return " ".join("$(DIRK_DATA_DIR)/%s" % s for s in self.target)
 
 
 @define(field_transformer=field_transformer(globals()))

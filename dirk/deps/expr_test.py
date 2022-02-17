@@ -1,3 +1,4 @@
+from importlib.machinery import ModuleSpec, SourceFileLoader
 from unittest import TestCase
 import re
 import typing
@@ -129,10 +130,11 @@ class ExprTemplateTestCase(ASTMixin, TestCase):
             )
 
     def test_match_node_with_scopes(self):
+        spec = ModuleSpec("a", loader=SourceFileLoader("a", "a"))
         scopes = Stack(
             [
                 {
-                    "a": Node(ast.Constant(value="file_a.csv")),
+                    "a": Node(ast.Constant(value="file_a.csv"), spec),
                     "MyClass": Node(
                         ast.ClassDef(
                             name="MyClass",
@@ -149,9 +151,16 @@ class ExprTemplateTestCase(ASTMixin, TestCase):
                                 ),
                             ],
                         ),
+                        spec,
                         children={
-                            "b": Node(ast.Constant(value="file_b.csv")),
-                            "c": Node(ast.Constant(value="file_c.pdf")),
+                            "b": Node(
+                                ast.Constant(value="file_b.csv"),
+                                spec,
+                            ),
+                            "c": Node(
+                                ast.Constant(value="file_c.pdf"),
+                                spec,
+                            ),
                         },
                     ),
                 }

@@ -21,10 +21,17 @@ class InvalidDependencyError(Exception):
 def validate_inputs(
     conf: Config, stage: Stage, ins: typing.List[str], rel_script_path: str
 ):
+    ins_set = set()
     for filename in ins:
+        if filename in ins_set:
+            print(
+                "WARNING: input %s of script %s found more than once"
+                % (json.dumps(filename), rel_script_path)
+            )
+        ins_set.add(filename)
         if conf.is_data_from_latter_stages(stage.name, filename):
             raise InvalidDependencyError(
-                "input %s of script %s comes from a latter stage"
+                "input %s of script %s comes from a later stage"
                 % (json.dumps(filename), rel_script_path)
             )
 
@@ -32,7 +39,14 @@ def validate_inputs(
 def validate_outputs(
     conf: Config, stage: Stage, outs: typing.List[str], rel_script_path: str
 ):
+    outs_set = set()
     for filename in outs:
+        if filename in outs_set:
+            print(
+                "WARNING: output %s of script %s found more than once"
+                % (json.dumps(filename), rel_script_path)
+            )
+        outs_set.add(filename)
         if not filename.startswith(stage.name + "/"):
             raise InvalidDependencyError(
                 "output %s of script %s must start with %s"
@@ -49,7 +63,6 @@ def write_deps(
     stage: Stage,
     loader: Loader,
     deps_file: io.TextIOWrapper,
-    dir_var: str,
     script_name: str,
     script_path: str,
 ):
@@ -77,21 +90,21 @@ def write_deps(
                 return
 
     # write rule for this script
-    targets = " ".join(["$(DATA_DIR)/%s" % name for name in outs])
+    targets = " ".join(["$(DIRK_DATA_DIR)/%s" % name for name in outs])
     deps_file.write(
-        "%s &: %s %s | $(%s)\n\t$(call dirk_execute,%s)\n\n"
+        "%s &: %s %s | $(DIRK_DATA_DIR)/%s\n\t$(call dirk_execute,%s)\n\n"
         % (
             targets,
-            "$(MD5_DIR)/%s.md5" % (rel_script_path),
+            "$(DIRK_MD5_DIR)/%s.md5" % (rel_script_path),
             " ".join(
-                ["$(DATA_DIR)/%s" % name for name in ins]
+                ["$(DIRK_DATA_DIR)/%s" % name for name in ins]
                 + (
                     [str(p) for p in stage.common_prerequisites]
                     if stage.common_prerequisites is not None
                     else []
                 )
             ),
-            dir_var,
+            stage.name,
             rel_script_path,
         )
     )
@@ -107,15 +120,15 @@ def exec(conf: Config, args: argparse.Namespace):
                 json.dumps(args.stage),
                 json.dumps([st.name for st in conf.stages]),
             )
-        dir_var = "%s_DATA_DIR" % stage.name.upper()
         os.makedirs(conf.deps_dir, exist_ok=True)
         with open(stage.deps_filepath, "w") as f:
             # write rule for data dir
-            f.write("%s := $(DATA_DIR)/%s\n\n" % (dir_var, stage.name))
-            f.write("$(%s): ; @-mkdir -p $@ 2>/dev/null\n\n" % (dir_var))
+            f.write(
+                "$(DIRK_DATA_DIR)/%s: ; @-mkdir -p $@ 2>/dev/null\n\n" % (stage.name)
+            )
 
             for script_name, script_path in stage.scripts():
-                write_deps(conf, stage, loader, f, dir_var, script_name, script_path)
+                write_deps(conf, stage, loader, f, script_name, script_path)
     else:
         if conf.overrides is not None:
             os.makedirs(conf.dirk_dir, exist_ok=True)
@@ -125,7 +138,9 @@ def exec(conf: Config, args: argparse.Namespace):
                         "%s &: %s\n\t%s\n\n"
                         % (
                             rule.target_str,
-                            " ".join("$(DATA_DIR)/%s" % d for d in rule.prerequisites),
+                            " ".join(
+                                "$(DIRK_DATA_DIR)/%s" % d for d in rule.prerequisites
+                            ),
                             rule.recipe,
                         )
                     )

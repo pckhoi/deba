@@ -21,10 +21,9 @@ cleandirk:
 
 define dirk_execute
 @start_time=$$SECONDS && \
-PYTHONPATH=$(DIRK_PYTHON_PATH) && \
 echo "running $(1)" | sed $$'s,.*,\e[1;37m&\e[m,' && \
-(set -o pipefail; $(PYTHON) $(1) 2>&1>&3 | sed $$'s,.*,  \e[31m&\e[m,' >&2 )3>&1 | sed $$'s,.*,  \e[1;30m&\e[m,' && \
-echo "script completed in $$((SECONDS - start_time)) seconds" | sed $$'s,.*,\e[1;34m&\e[m,'
+(set -o pipefail; PYTHONPATH=$(DIRK_PYTHON_PATH) $(PYTHON) $(1) 2>&1>&3 | sed $$'s,.*,    \e[31m&\e[m,' >&2 )3>&1 | sed $$'s,.*,    \e[1;30m&\e[m,' && \
+echo "    script completed in $$((SECONDS - start_time)) seconds" | sed $$'s,.*,\e[1;34m&\e[m,'
 endef
 
 # calculate md5

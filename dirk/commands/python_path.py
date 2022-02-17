@@ -6,7 +6,7 @@ from dirk.config import Config
 
 
 def exec(conf: Config, args: argparse.Namespace):
-    print(";".join(conf.script_search_paths))
+    print(os.pathsep.join(conf.script_search_paths))
 
 
 @subcommand(exec=exec)

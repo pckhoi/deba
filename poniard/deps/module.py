@@ -227,6 +227,7 @@ class Loader(object):
         for name in parts:
             print("PathFinder.find_spec(%s, %s)" % (name, paths))
             spec = PathFinder.find_spec(name, paths)
+            print("spec = %s" % spec)
             if spec is None:
                 return None
             paths = getattr(spec, "submodule_search_locations", [])

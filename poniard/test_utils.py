@@ -1,9 +1,12 @@
 import typing
 import tempfile
 import ast
+import io
 import os
 import sys
 import shutil
+
+from attrs import define, field
 
 
 def ast_dump(obj):

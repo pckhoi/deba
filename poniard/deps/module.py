@@ -1,14 +1,11 @@
 import ast
 import typing
 import os
-import time
 from importlib.machinery import ModuleSpec, PathFinder
 
 import zope.interface
 from zope.interface.common.collections import IMapping
 from attrs import define, field
-
-from poniard.retry import retry_with_backoff
 
 
 @zope.interface.implementer(IMapping)
@@ -216,31 +213,6 @@ class Loader(object):
     module_asts: typing.Dict[str, ast.Module] = field(factory=dict)
     module_nodes: typing.Dict = field(factory=dict)
 
-    def _spec_found(self, name: str, paths: typing.List[str]) -> bool:
-        for path in paths:
-            for fp in [
-                os.path.join(path, "%s.py" % name),
-                os.path.join(path, name, "__init__.py"),
-            ]:
-                if os.path.isfile(fp):
-                    return True
-        return False
-
-    def _find_spec_exponential_backoff(
-        self, name: str, paths: typing.List[str]
-    ) -> typing.Union[ModuleSpec, None]:
-        if not self._spec_found(name, paths):
-            return None
-
-        def find_spec():
-            spec = PathFinder.find_spec(name, paths)
-            if spec is None:
-                raise ImportError("module %s cannot be found in %s" % (name, paths))
-            return spec
-
-        print('finding module spec for "%s"' % name)
-        return retry_with_backoff(find_spec, 10)
-
     def find_spec(
         self,
         module_name: str,
@@ -255,7 +227,7 @@ class Loader(object):
             )
         )
         for name in parts:
-            spec = self._find_spec_exponential_backoff(name, paths)
+            spec = PathFinder.find_spec(name, paths)
             if spec is None:
                 return None
             paths = getattr(spec, "submodule_search_locations", [])

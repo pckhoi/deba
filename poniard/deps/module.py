@@ -225,6 +225,7 @@ class Loader(object):
             else parent_module_paths + self.paths
         )
         for name in parts:
+            print("PathFinder.find_spec(%s, %s)" % (name, paths))
             spec = PathFinder.find_spec(name, paths)
             if spec is None:
                 return None

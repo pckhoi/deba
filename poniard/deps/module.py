@@ -230,7 +230,7 @@ class Loader(object):
                 spec = PathFinder.find_spec(name, paths)
                 if spec is not None:
                     break
-                time.sleep(0.1)
+                time.sleep(0.1 * (i + 1))
             if spec is None:
                 return None
             paths = getattr(spec, "submodule_search_locations", [])

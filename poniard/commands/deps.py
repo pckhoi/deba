@@ -4,12 +4,9 @@ import json
 import os
 import typing
 
-from charset_normalizer import logging
-
 from poniard.commands.decorators import subcommand
 from poniard.config import Config, Stage
 
-# from poniard.deps.finder import DepsFinder
 from poniard.deps.module import Loader
 from poniard.deps.find import find_dependencies
 
@@ -83,8 +80,8 @@ def write_deps(
     if conf.overrides is not None:
         for idx, exec_rule in enumerate(conf.overrides):
             if exec_rule.target_set == set(outs):
-                logging.info(
-                    "override #%d matches outputs, skipping script %s"
+                print(
+                    "    override #%d matches outputs, skipping script %s"
                     % (idx, script_name)
                 )
                 return

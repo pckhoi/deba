@@ -6,10 +6,10 @@ import ast
 
 import prettyprinter
 
-from poniard.deps.expr import ExprPattern
-from poniard.deps.module import Node, Module, Package, Loader, trim_suffix
-from poniard.deps.find import build_module_from_filepath, find_dependencies
-from poniard.test_utils import ASTMixin, TempDirMixin
+from bolo.deps.expr import ExprPattern
+from bolo.deps.module import Node, Module, Package, Loader, trim_suffix
+from bolo.deps.find import build_module_from_filepath, find_dependencies
+from bolo.test_utils import ASTMixin, TempDirMixin
 
 
 prettyprinter.install_extras(["attrs"])

@@ -71,8 +71,8 @@ def field_transformer(namespace):
     return transform
 
 
-DOC_K = "poniard_doc"
-REQUIRED_K = "poniard_required"
+DOC_K = "bolo_doc"
+REQUIRED_K = "bolo_required"
 
 
 def doc(

@@ -2,14 +2,14 @@ import unittest
 from unittest.mock import patch, call
 import argparse
 
-from poniard.commands.targets import add_subcommand
-from poniard.config import Config, Stage
+from bolo.commands.targets import add_subcommand
+from bolo.config import Config, Stage
 
 
 class TargetsCommandTestCase(unittest.TestCase):
     @patch("builtins.print")
     def test_run(self, mock_print):
-        parser = argparse.ArgumentParser("poniard")
+        parser = argparse.ArgumentParser("bolo")
         subparsers = parser.add_subparsers()
         add_subcommand(subparsers)
         args = parser.parse_args(["targets"])

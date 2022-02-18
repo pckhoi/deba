@@ -2,8 +2,8 @@ import argparse
 import hashlib
 import pathlib
 
-from poniard.commands.decorators import subcommand
-from poniard.config import Config
+from bolo.commands.decorators import subcommand
+from bolo.config import Config
 
 
 def exec(conf: Config, args: argparse.Namespace):

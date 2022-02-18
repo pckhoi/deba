@@ -1,6 +1,6 @@
 import pathlib
 
-from poniard.config import get_config
+from bolo.config import get_config
 
 
 def data(s: str) -> pathlib.Path:

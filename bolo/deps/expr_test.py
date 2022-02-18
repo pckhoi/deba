@@ -5,9 +5,9 @@ import typing
 import ast
 
 from attrs import define
-from poniard.deps.expr import ExprPattern, ExprTemplateParseError
-from poniard.deps.module import Node, Stack
-from poniard.test_utils import ASTMixin
+from bolo.deps.expr import ExprPattern, ExprTemplateParseError
+from bolo.deps.module import Node, Stack
+from bolo.test_utils import ASTMixin
 
 
 class ExprTemplateTestCase(ASTMixin, TestCase):
@@ -69,7 +69,7 @@ class ExprTemplateTestCase(ASTMixin, TestCase):
                 ast.Call(
                     ast.Attribute(
                         ast.Name(
-                            "poniard_backtick_pat_000",
+                            "bolo_backtick_pat_000",
                             ctx=ast.Load(),
                         ),
                         attr="to_csv",

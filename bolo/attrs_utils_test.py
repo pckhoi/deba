@@ -4,7 +4,7 @@ import typing
 from attrs import define, field
 
 import zope.interface
-from poniard.attrs_utils import field_transformer
+from bolo.attrs_utils import field_transformer
 
 
 class IC(zope.interface.Interface):

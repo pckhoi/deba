@@ -1,14 +1,14 @@
 import unittest
 import argparse
 
-from poniard.commands.md5 import add_subcommand
-from poniard.config import Config, Stage
-from poniard.test_utils import TempDirMixin
+from bolo.commands.md5 import add_subcommand
+from bolo.config import Config, Stage
+from bolo.test_utils import TempDirMixin
 
 
 class MD5CommandTestCase(TempDirMixin, unittest.TestCase):
     def test_run(self):
-        parser = argparse.ArgumentParser("poniard")
+        parser = argparse.ArgumentParser("bolo")
         subparsers = parser.add_subparsers()
         add_subcommand(subparsers)
 

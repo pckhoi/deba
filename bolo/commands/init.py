@@ -2,10 +2,10 @@ import argparse
 import pathlib
 import shutil
 
-from poniard.commands.decorators import subcommand
-from poniard.config import Config, Stage
-from poniard.deps.expr import ExprPatterns
-from poniard.serialize import yaml_dump
+from bolo.commands.decorators import subcommand
+from bolo.config import Config, Stage
+from bolo.deps.expr import ExprPatterns
+from bolo.serialize import yaml_dump
 
 
 def is_line_found(file: pathlib.Path, expected_line: str) -> bool:
@@ -26,8 +26,8 @@ def ensure_line(file: pathlib.Path, line: str):
 
 def exec(conf: Config, args: argparse.Namespace):
     cwd = pathlib.Path.cwd()
-    poniard_file = cwd / "poniard.yaml"
-    if not poniard_file.is_file():
+    bolo_file = cwd / "bolo.yaml"
+    if not bolo_file.is_file():
         # prompt for stages
         stages = []
         if args.stages is None:
@@ -78,26 +78,26 @@ def exec(conf: Config, args: argparse.Namespace):
         else:
             output_patterns = args.output_patterns
 
-        # write poniard config
+        # write bolo config
         conf = Config(
             stages=stages,
             targets=targets,
             patterns=ExprPatterns(inputs=input_patterns, outputs=output_patterns),
         )
-        with open(poniard_file, "w") as f:
+        with open(bolo_file, "w") as f:
             f.write(yaml_dump(conf))
-        print("wrote poniard config to %s" % poniard_file.name)
+        print("wrote bolo config to %s" % bolo_file.name)
     else:
-        print("poniard config found, skipping config initialization")
+        print("bolo config found, skipping config initialization")
 
     # write make config
-    mk_file = cwd / "poniard.mk"
+    mk_file = cwd / "bolo.mk"
     shutil.copyfile(pathlib.Path(__file__).parent / "Makefile", mk_file)
     print("wrote Make config to %s" % mk_file.name)
-    ensure_line(cwd / "Makefile", "include poniard.mk")
+    ensure_line(cwd / "Makefile", "include bolo.mk")
 
     # write .gitignore
-    ensure_line(cwd / ".gitignore", ".poniard")
+    ensure_line(cwd / ".gitignore", ".bolo")
 
 
 @subcommand(exec=exec, open_config=False)
@@ -105,7 +105,7 @@ def add_subcommand(
     subparsers: argparse._SubParsersAction,
 ) -> argparse.ArgumentParser:
     parser = subparsers.add_parser(
-        name="init", description="initialize poniard config in the current folder"
+        name="init", description="initialize bolo config in the current folder"
     )
     parser.add_argument(
         "--stages",
@@ -117,7 +117,7 @@ def add_subcommand(
         "--targets",
         type=str,
         nargs="*",
-        help="target files. Each time your run `make poniard`, these files will be updated if any of their dependencies have been updated since.",
+        help="target files. Each time your run `make bolo`, these files will be updated if any of their dependencies have been updated since.",
     )
     parser.add_argument(
         "--input-patterns",

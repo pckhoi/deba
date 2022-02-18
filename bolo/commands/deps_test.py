@@ -1,15 +1,15 @@
 import unittest
 import argparse
 
-from poniard.commands.deps import add_subcommand
-from poniard.config import Config, ExecutionRule, Stage
-from poniard.deps.expr import ExprPatterns
-from poniard.test_utils import TempDirMixin
+from bolo.commands.deps import add_subcommand
+from bolo.config import Config, ExecutionRule, Stage
+from bolo.deps.expr import ExprPatterns
+from bolo.test_utils import TempDirMixin
 
 
 class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
     def test_run(self):
-        parser = argparse.ArgumentParser("poniard")
+        parser = argparse.ArgumentParser("bolo")
         subparsers = parser.add_subparsers()
         add_subcommand(subparsers)
         conf = Config(
@@ -75,12 +75,12 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
         args.exec(conf, args)
 
         self.assertFileContent(
-            ".poniard/deps/clean.d",
+            ".bolo/deps/clean.d",
             [
-                "$(PONIARD_DATA_DIR)/clean: ; @-mkdir -p $@ 2>/dev/null",
+                "$(BOLO_DATA_DIR)/clean: ; @-mkdir -p $@ 2>/dev/null",
                 "",
-                "$(PONIARD_DATA_DIR)/clean/a_output.csv &: $(PONIARD_MD5_DIR)/clean/a.py.md5 $(PONIARD_DATA_DIR)/raw/a_input.csv | $(PONIARD_DATA_DIR)/clean",
-                "\t$(call poniard_execute,clean/a.py)",
+                "$(BOLO_DATA_DIR)/clean/a_output.csv &: $(BOLO_MD5_DIR)/clean/a.py.md5 $(BOLO_DATA_DIR)/raw/a_input.csv | $(BOLO_DATA_DIR)/clean",
+                "\t$(call bolo_execute,clean/a.py)",
                 "",
                 "",
             ],
@@ -90,12 +90,12 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
         args.exec(conf, args)
 
         self.assertFileContent(
-            ".poniard/deps/fuse.d",
+            ".bolo/deps/fuse.d",
             [
-                "$(PONIARD_DATA_DIR)/fuse: ; @-mkdir -p $@ 2>/dev/null",
+                "$(BOLO_DATA_DIR)/fuse: ; @-mkdir -p $@ 2>/dev/null",
                 "",
-                "$(PONIARD_DATA_DIR)/fuse/data.csv &: $(PONIARD_MD5_DIR)/fuse/a.py.md5 $(PONIARD_DATA_DIR)/clean/b_output.csv | $(PONIARD_DATA_DIR)/fuse",
-                "\t$(call poniard_execute,fuse/a.py)",
+                "$(BOLO_DATA_DIR)/fuse/data.csv &: $(BOLO_MD5_DIR)/fuse/a.py.md5 $(BOLO_DATA_DIR)/clean/b_output.csv | $(BOLO_DATA_DIR)/fuse",
+                "\t$(call bolo_execute,fuse/a.py)",
                 "",
                 "",
             ],
@@ -105,12 +105,12 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
         args.exec(conf, args)
 
         self.assertFileContent(
-            ".poniard/main.d",
+            ".bolo/main.d",
             [
-                "$(PONIARD_DATA_DIR)/clean/b_output.csv &: $(PONIARD_DATA_DIR)/raw/my_b_input.csv",
+                "$(BOLO_DATA_DIR)/clean/b_output.csv &: $(BOLO_DATA_DIR)/raw/my_b_input.csv",
                 "\tmy_command",
                 "",
-                "$(PONIARD_DATA_DIR)/clean/c.csv &: $(PONIARD_DATA_DIR)/raw/c.csv",
+                "$(BOLO_DATA_DIR)/clean/c.csv &: $(BOLO_DATA_DIR)/raw/c.csv",
                 "\tmy_other_command",
                 "",
                 "",

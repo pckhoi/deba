@@ -6,7 +6,7 @@ from unittest import TestCase
 
 from attrs import define, field
 
-from poniard.serialize import yaml_load, yaml_dump
+from bolo.serialize import yaml_load, yaml_dump
 
 
 @define()

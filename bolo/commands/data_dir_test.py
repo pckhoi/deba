@@ -2,14 +2,14 @@ import unittest
 from unittest.mock import patch
 import argparse
 
-from poniard.commands.data_dir import add_subcommand
-from poniard.config import Config, Stage
+from bolo.commands.data_dir import add_subcommand
+from bolo.config import Config, Stage
 
 
 class DataDirCommandTestCase(unittest.TestCase):
     @patch("builtins.print")
     def test_run(self, mock_print):
-        parser = argparse.ArgumentParser("poniard")
+        parser = argparse.ArgumentParser("bolo")
         subparsers = parser.add_subparsers()
         add_subcommand(subparsers)
         conf = Config(stages=[Stage(name="clean")])

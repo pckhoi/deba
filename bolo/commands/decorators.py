@@ -1,7 +1,7 @@
 import argparse
 import typing
 
-from poniard.config import Config, get_config
+from bolo.config import Config, get_config
 
 EXEC_FUNC = typing.Callable[[Config, argparse.Namespace], None]
 ADD_COMMAND_FUNC = typing.Callable[

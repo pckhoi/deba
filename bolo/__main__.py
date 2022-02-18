@@ -1,4 +1,4 @@
-from poniard.commands import get_parser
+from bolo.commands import get_parser
 
 parser = get_parser()
 

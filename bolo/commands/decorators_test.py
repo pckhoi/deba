@@ -2,8 +2,8 @@ import argparse
 import unittest
 import unittest.mock
 
-from poniard.commands.decorators import subcommand
-from poniard.config import Config, Stage
+from bolo.commands.decorators import subcommand
+from bolo.config import Config, Stage
 
 
 def spy():

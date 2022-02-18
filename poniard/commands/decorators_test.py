@@ -2,8 +2,8 @@ import argparse
 import unittest
 import unittest.mock
 
-from dirk.commands.decorators import subcommand
-from dirk.config import Config, Stage
+from poniard.commands.decorators import subcommand
+from poniard.config import Config, Stage
 
 
 def spy():

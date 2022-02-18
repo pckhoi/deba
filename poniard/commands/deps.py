@@ -6,12 +6,12 @@ import typing
 
 from charset_normalizer import logging
 
-from dirk.commands.decorators import subcommand
-from dirk.config import Config, Stage
+from poniard.commands.decorators import subcommand
+from poniard.config import Config, Stage
 
-# from dirk.deps.finder import DepsFinder
-from dirk.deps.module import Loader
-from dirk.deps.find import find_dependencies
+# from poniard.deps.finder import DepsFinder
+from poniard.deps.module import Loader
+from poniard.deps.find import find_dependencies
 
 
 class InvalidDependencyError(Exception):
@@ -90,14 +90,14 @@ def write_deps(
                 return
 
     # write rule for this script
-    targets = " ".join(["$(DIRK_DATA_DIR)/%s" % name for name in outs])
+    targets = " ".join(["$(PONIARD_DATA_DIR)/%s" % name for name in outs])
     deps_file.write(
-        "%s &: %s %s | $(DIRK_DATA_DIR)/%s\n\t$(call dirk_execute,%s)\n\n"
+        "%s &: %s %s | $(PONIARD_DATA_DIR)/%s\n\t$(call poniard_execute,%s)\n\n"
         % (
             targets,
-            "$(DIRK_MD5_DIR)/%s.md5" % (rel_script_path),
+            "$(PONIARD_MD5_DIR)/%s.md5" % (rel_script_path),
             " ".join(
-                ["$(DIRK_DATA_DIR)/%s" % name for name in ins]
+                ["$(PONIARD_DATA_DIR)/%s" % name for name in ins]
                 + (
                     [str(p) for p in stage.common_prerequisites]
                     if stage.common_prerequisites is not None
@@ -124,14 +124,14 @@ def exec(conf: Config, args: argparse.Namespace):
         with open(stage.deps_filepath, "w") as f:
             # write rule for data dir
             f.write(
-                "$(DIRK_DATA_DIR)/%s: ; @-mkdir -p $@ 2>/dev/null\n\n" % (stage.name)
+                "$(PONIARD_DATA_DIR)/%s: ; @-mkdir -p $@ 2>/dev/null\n\n" % (stage.name)
             )
 
             for script_name, script_path in stage.scripts():
                 write_deps(conf, stage, loader, f, script_name, script_path)
     else:
         if conf.overrides is not None:
-            os.makedirs(conf.dirk_dir, exist_ok=True)
+            os.makedirs(conf.poniard_dir, exist_ok=True)
             with open(conf.main_deps_filepath, "w") as f:
                 for rule in conf.overrides:
                     f.write(
@@ -139,7 +139,7 @@ def exec(conf: Config, args: argparse.Namespace):
                         % (
                             rule.target_str,
                             " ".join(
-                                "$(DIRK_DATA_DIR)/%s" % d for d in rule.prerequisites
+                                "$(PONIARD_DATA_DIR)/%s" % d for d in rule.prerequisites
                             ),
                             rule.recipe,
                         )

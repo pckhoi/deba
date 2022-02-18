@@ -1,6 +1,6 @@
 import pathlib
 
-from dirk.config import get_config
+from poniard.config import get_config
 
 
 def data(s: str) -> pathlib.Path:

@@ -2,10 +2,10 @@ import argparse
 import pathlib
 import shutil
 
-from dirk.commands.decorators import subcommand
-from dirk.config import Config, Stage
-from dirk.deps.expr import ExprPatterns
-from dirk.serialize import yaml_dump
+from poniard.commands.decorators import subcommand
+from poniard.config import Config, Stage
+from poniard.deps.expr import ExprPatterns
+from poniard.serialize import yaml_dump
 
 
 def is_line_found(file: pathlib.Path, expected_line: str) -> bool:
@@ -26,8 +26,8 @@ def ensure_line(file: pathlib.Path, line: str):
 
 def exec(conf: Config, args: argparse.Namespace):
     cwd = pathlib.Path.cwd()
-    dirk_file = cwd / "dirk.yaml"
-    if not dirk_file.is_file():
+    poniard_file = cwd / "poniard.yaml"
+    if not poniard_file.is_file():
         # prompt for stages
         stages = []
         if args.stages is None:
@@ -78,26 +78,26 @@ def exec(conf: Config, args: argparse.Namespace):
         else:
             output_patterns = args.output_patterns
 
-        # write dirk config
+        # write poniard config
         conf = Config(
             stages=stages,
             targets=targets,
             patterns=ExprPatterns(inputs=input_patterns, outputs=output_patterns),
         )
-        with open(dirk_file, "w") as f:
+        with open(poniard_file, "w") as f:
             f.write(yaml_dump(conf))
-        print("wrote dirk config to %s" % dirk_file.name)
+        print("wrote poniard config to %s" % poniard_file.name)
     else:
-        print("dirk config found, skipping config initialization")
+        print("poniard config found, skipping config initialization")
 
     # write make config
-    mk_file = cwd / "dirk.mk"
+    mk_file = cwd / "poniard.mk"
     shutil.copyfile(pathlib.Path(__file__).parent / "Makefile", mk_file)
     print("wrote Make config to %s" % mk_file.name)
-    ensure_line(cwd / "Makefile", "include dirk.mk")
+    ensure_line(cwd / "Makefile", "include poniard.mk")
 
     # write .gitignore
-    ensure_line(cwd / ".gitignore", ".dirk")
+    ensure_line(cwd / ".gitignore", ".poniard")
 
 
 @subcommand(exec=exec, open_config=False)
@@ -105,7 +105,7 @@ def add_subcommand(
     subparsers: argparse._SubParsersAction,
 ) -> argparse.ArgumentParser:
     parser = subparsers.add_parser(
-        name="init", description="initialize dirk config in the current folder"
+        name="init", description="initialize poniard config in the current folder"
     )
     parser.add_argument(
         "--stages",
@@ -117,7 +117,7 @@ def add_subcommand(
         "--targets",
         type=str,
         nargs="*",
-        help="target files. Each time your run `make dirk`, these files will be updated if any of their dependencies have been updated since.",
+        help="target files. Each time your run `make poniard`, these files will be updated if any of their dependencies have been updated since.",
     )
     parser.add_argument(
         "--input-patterns",

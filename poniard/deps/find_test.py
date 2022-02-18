@@ -6,10 +6,10 @@ import ast
 
 import prettyprinter
 
-from dirk.deps.expr import ExprPattern
-from dirk.deps.module import Node, Module, Package, Loader, trim_suffix
-from dirk.deps.find import build_module_from_filepath, find_dependencies
-from dirk.test_utils import ASTMixin, TempDirMixin
+from poniard.deps.expr import ExprPattern
+from poniard.deps.module import Node, Module, Package, Loader, trim_suffix
+from poniard.deps.find import build_module_from_filepath, find_dependencies
+from poniard.test_utils import ASTMixin, TempDirMixin
 
 
 prettyprinter.install_extras(["attrs"])
@@ -726,13 +726,7 @@ class DepsFinderTestCase(ASTMixin, TempDirMixin, TestCase):
                 "",
             ],
         )
-        self.write_file(
-            "a/__main__.py",
-            [
-                "print('executing')",
-                ""
-            ]
-        )
+        self.write_file("a/__main__.py", ["print('executing')", ""])
         self.assertObjectEqual(
             build_module_from_filepath(loader, self.file_path("a")),
             Package(

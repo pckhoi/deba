@@ -6,7 +6,7 @@ from unittest import TestCase
 
 from attrs import define, field
 
-from dirk.serialize import yaml_load, yaml_dump
+from poniard.serialize import yaml_load, yaml_dump
 
 
 @define()

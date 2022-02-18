@@ -2,8 +2,8 @@ import argparse
 import hashlib
 import pathlib
 
-from dirk.commands.decorators import subcommand
-from dirk.config import Config
+from poniard.commands.decorators import subcommand
+from poniard.config import Config
 
 
 def exec(conf: Config, args: argparse.Namespace):

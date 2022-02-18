@@ -37,7 +37,7 @@ jobs:
           pip install -r requirements.txt
           pip install pytest-cov prettyprinter
       - name: Test
-        run: pytest --cov=dirk dirk
+        run: pytest --cov=poniard poniard
 
   tagged-release:
     name: "Tagged Release"

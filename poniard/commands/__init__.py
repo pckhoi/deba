@@ -11,7 +11,7 @@ from .python_path import add_subcommand as add_python_path_command
 
 def get_parser() -> argparse.ArgumentParser:
     parser = argparse.ArgumentParser(
-        "dirk", description="discover proper order of execution"
+        "poniard", description="discover proper order of execution"
     )
     subparsers = parser.add_subparsers()
     add_init_command(subparsers)

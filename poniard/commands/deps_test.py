@@ -1,15 +1,15 @@
 import unittest
 import argparse
 
-from dirk.commands.deps import add_subcommand
-from dirk.config import Config, ExecutionRule, Stage
-from dirk.deps.expr import ExprPatterns
-from dirk.test_utils import TempDirMixin
+from poniard.commands.deps import add_subcommand
+from poniard.config import Config, ExecutionRule, Stage
+from poniard.deps.expr import ExprPatterns
+from poniard.test_utils import TempDirMixin
 
 
 class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
     def test_run(self):
-        parser = argparse.ArgumentParser("dirk")
+        parser = argparse.ArgumentParser("poniard")
         subparsers = parser.add_subparsers()
         add_subcommand(subparsers)
         conf = Config(
@@ -75,12 +75,12 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
         args.exec(conf, args)
 
         self.assertFileContent(
-            ".dirk/deps/clean.d",
+            ".poniard/deps/clean.d",
             [
-                "$(DIRK_DATA_DIR)/clean: ; @-mkdir -p $@ 2>/dev/null",
+                "$(PONIARD_DATA_DIR)/clean: ; @-mkdir -p $@ 2>/dev/null",
                 "",
-                "$(DIRK_DATA_DIR)/clean/a_output.csv &: $(DIRK_MD5_DIR)/clean/a.py.md5 $(DIRK_DATA_DIR)/raw/a_input.csv | $(DIRK_DATA_DIR)/clean",
-                "\t$(call dirk_execute,clean/a.py)",
+                "$(PONIARD_DATA_DIR)/clean/a_output.csv &: $(PONIARD_MD5_DIR)/clean/a.py.md5 $(PONIARD_DATA_DIR)/raw/a_input.csv | $(PONIARD_DATA_DIR)/clean",
+                "\t$(call poniard_execute,clean/a.py)",
                 "",
                 "",
             ],
@@ -90,12 +90,12 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
         args.exec(conf, args)
 
         self.assertFileContent(
-            ".dirk/deps/fuse.d",
+            ".poniard/deps/fuse.d",
             [
-                "$(DIRK_DATA_DIR)/fuse: ; @-mkdir -p $@ 2>/dev/null",
+                "$(PONIARD_DATA_DIR)/fuse: ; @-mkdir -p $@ 2>/dev/null",
                 "",
-                "$(DIRK_DATA_DIR)/fuse/data.csv &: $(DIRK_MD5_DIR)/fuse/a.py.md5 $(DIRK_DATA_DIR)/clean/b_output.csv | $(DIRK_DATA_DIR)/fuse",
-                "\t$(call dirk_execute,fuse/a.py)",
+                "$(PONIARD_DATA_DIR)/fuse/data.csv &: $(PONIARD_MD5_DIR)/fuse/a.py.md5 $(PONIARD_DATA_DIR)/clean/b_output.csv | $(PONIARD_DATA_DIR)/fuse",
+                "\t$(call poniard_execute,fuse/a.py)",
                 "",
                 "",
             ],
@@ -105,12 +105,12 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
         args.exec(conf, args)
 
         self.assertFileContent(
-            ".dirk/main.d",
+            ".poniard/main.d",
             [
-                "$(DIRK_DATA_DIR)/clean/b_output.csv &: $(DIRK_DATA_DIR)/raw/my_b_input.csv",
+                "$(PONIARD_DATA_DIR)/clean/b_output.csv &: $(PONIARD_DATA_DIR)/raw/my_b_input.csv",
                 "\tmy_command",
                 "",
-                "$(DIRK_DATA_DIR)/clean/c.csv &: $(DIRK_DATA_DIR)/raw/c.csv",
+                "$(PONIARD_DATA_DIR)/clean/c.csv &: $(PONIARD_DATA_DIR)/raw/c.csv",
                 "\tmy_other_command",
                 "",
                 "",

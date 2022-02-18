@@ -1,7 +1,7 @@
 import argparse
 import typing
 
-from dirk.config import Config, get_config
+from poniard.config import Config, get_config
 
 EXEC_FUNC = typing.Callable[[Config, argparse.Namespace], None]
 ADD_COMMAND_FUNC = typing.Callable[

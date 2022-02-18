@@ -3,9 +3,9 @@ import os
 from importlib.machinery import ModuleSpec
 import typing
 
-from dirk.deps.module import Loader, Node, Stack
+from poniard.deps.module import Loader, Node, Stack
 
-from dirk.deps.expr import ExprPattern
+from poniard.deps.expr import ExprPattern
 
 
 class ModuleParseError(ValueError):

@@ -5,8 +5,8 @@ import ast
 from fnmatch import fnmatchcase
 
 from attrs import define, field
-from dirk.attrs_utils import field_transformer, doc
-from dirk.deps.module import Stack
+from poniard.attrs_utils import field_transformer, doc
+from poniard.deps.module import Stack
 
 
 class ExprTemplateParseError(ValueError):
@@ -20,7 +20,7 @@ class ExprPattern(object):
     file_pat: re.Pattern = field()
     patterns: typing.List[str] = field(factory=list)
     backtick_name_pat: typing.ClassVar[re.Pattern] = re.compile(
-        r"^dirk_backtick_pat_(\d{3})$"
+        r"^poniard_backtick_pat_(\d{3})$"
     )
 
     @node.validator
@@ -82,7 +82,7 @@ class ExprPattern(object):
                         )
                     next_backtick += e.offset
                     pattern = line[e.offset : next_backtick]
-                    lines[e.lineno - 1] = "%sdirk_backtick_pat_%03d%s" % (
+                    lines[e.lineno - 1] = "%sponiard_backtick_pat_%03d%s" % (
                         line[: e.offset - 1],
                         len(patterns),
                         line[next_backtick + 1 :],

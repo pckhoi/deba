@@ -1,14 +1,14 @@
 import unittest
 import argparse
 
-from dirk.commands.md5 import add_subcommand
-from dirk.config import Config, Stage
-from dirk.test_utils import TempDirMixin
+from poniard.commands.md5 import add_subcommand
+from poniard.config import Config, Stage
+from poniard.test_utils import TempDirMixin
 
 
 class MD5CommandTestCase(TempDirMixin, unittest.TestCase):
     def test_run(self):
-        parser = argparse.ArgumentParser("dirk")
+        parser = argparse.ArgumentParser("poniard")
         subparsers = parser.add_subparsers()
         add_subcommand(subparsers)
 

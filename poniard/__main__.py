@@ -1,4 +1,4 @@
-from dirk.commands import get_parser
+from poniard.commands import get_parser
 
 parser = get_parser()
 

@@ -1,6 +1,7 @@
 import ast
 import typing
 import os
+import time
 from importlib.machinery import ModuleSpec, PathFinder
 
 import zope.interface
@@ -225,9 +226,11 @@ class Loader(object):
             else parent_module_paths + self.paths
         )
         for name in parts:
-            print("PathFinder.find_spec(%s, %s)" % (name, paths))
-            spec = PathFinder.find_spec(name, paths)
-            print("spec = %s" % spec)
+            for i in range(5):
+                spec = PathFinder.find_spec(name, paths)
+                if spec is not None:
+                    break
+                time.sleep(0.1)
             if spec is None:
                 return None
             paths = getattr(spec, "submodule_search_locations", [])

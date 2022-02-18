@@ -34,10 +34,7 @@ class ExprTemplateTestCase(ASTMixin, TestCase):
 
         with self.assertRaises(ExprTemplateParseError) as cm:
             ExprPattern.from_str(r"r'*'")
-        self.assertEqual(
-            cm.exception.args,
-            ("expression must be a function call, found <class 'ast.Constant'>",),
-        )
+        self.assertTrue("expression must be a function call" in cm.exception.args[0])
 
         with self.assertRaises(ExprTemplateParseError) as cm:
             ExprPattern.from_str(r"to_csv(r'*')")
@@ -53,7 +50,7 @@ class ExprTemplateTestCase(ASTMixin, TestCase):
         class Case:
             s: str
             expr: ast.AST
-            file_pat: re.Pattern
+            file_pat: object
             patterns: typing.List[str]
 
         for case in [

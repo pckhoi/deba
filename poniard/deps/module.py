@@ -124,26 +124,24 @@ class Package(object):
         return package
 
     def collect_submodules(self, loader: "Loader", spec: ModuleSpec):
-        reader = spec.loader.get_resource_reader()
-        if reader is not None:
-            for filename in reader.contents():
-                if filename in ["__init__.py", "__main__.py"]:
-                    continue
-                if filename.endswith(".py"):
-                    name = trim_suffix(filename, ".py")
-                    self.modules[name] = loader.find_module(
-                        name, spec.submodule_search_locations
-                    )
-                elif os.path.isdir(
-                    os.path.join(spec.submodule_search_locations[0], filename)
-                ) and os.path.exists(
-                    os.path.join(
-                        spec.submodule_search_locations[0], filename, "__init__.py"
-                    )
-                ):
-                    self.modules[filename] = loader.find_module(
-                        filename, spec.submodule_search_locations
-                    )
+        for filename in os.listdir(spec.submodule_search_locations[0]):
+            if filename in ["__init__.py", "__main__.py"]:
+                continue
+            if filename.endswith(".py"):
+                name = trim_suffix(filename, ".py")
+                self.modules[name] = loader.find_module(
+                    name, spec.submodule_search_locations
+                )
+            elif os.path.isdir(
+                os.path.join(spec.submodule_search_locations[0], filename)
+            ) and os.path.exists(
+                os.path.join(
+                    spec.submodule_search_locations[0], filename, "__init__.py"
+                )
+            ):
+                self.modules[filename] = loader.find_module(
+                    filename, spec.submodule_search_locations
+                )
 
 
 @define

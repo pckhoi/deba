@@ -17,9 +17,9 @@ class ExprTemplateParseError(ValueError):
 class ExprPattern(object):
     node: ast.AST = field()
     text: str = field()
-    file_pat: re.Pattern = field()
+    file_pat: object = field()
     patterns: typing.List[str] = field(factory=list)
-    backtick_name_pat: typing.ClassVar[re.Pattern] = re.compile(
+    backtick_name_pat: typing.ClassVar[object] = re.compile(
         r"^poniard_backtick_pat_(\d{3})$"
     )
 

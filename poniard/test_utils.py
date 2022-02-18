@@ -1,13 +1,16 @@
-import socket
-import threading
 import typing
 import tempfile
 import ast
 import os
-import http.server
+import sys
 import shutil
-import socketserver
-import venv
+
+
+def ast_dump(obj):
+    if sys.version_info[1] < 9:
+        ast.dump(obj)
+    else:
+        ast.dump(obj, indent=4)
 
 
 class ASTMixin(object):
@@ -17,7 +20,7 @@ class ASTMixin(object):
         if a is None or b is None:
             self.assertEqual(a, b, msg)
         else:
-            self.assertEqual(ast.dump(a, indent=4), ast.dump(b, indent=4), msg)
+            self.assertEqual(ast_dump(a), ast_dump(b), msg)
 
 
 class TempDirMixin(object):

@@ -51,6 +51,7 @@ class TempDirMixin(object):
         os.makedirs(os.path.dirname(self.file_path(filename)), exist_ok=True)
         with open(self.file_path(filename), "w") as f:
             f.write("\n".join(lines))
+        print("wrote file %s" % self.file_path(filename))
 
     def mod_time(self, filename: str) -> float:
         return os.path.getmtime(self.file_path(filename))

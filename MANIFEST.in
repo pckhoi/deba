@@ -1,1 +1,1 @@
-dirk/commands/Makefile
+include dirk/commands/Makefile

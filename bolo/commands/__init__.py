@@ -3,7 +3,6 @@ import argparse
 from .init import add_subcommand as add_init_command
 from .data_dir import add_subcommand as add_data_dir_command
 from .deps import add_subcommand as add_deps_command
-from .md5 import add_subcommand as add_md5_command
 from .stages import add_subcommand as add_stages_command
 from .targets import add_subcommand as add_targets_command
 from .python_path import add_subcommand as add_python_path_command
@@ -17,7 +16,6 @@ def get_parser() -> argparse.ArgumentParser:
     add_init_command(subparsers)
     add_data_dir_command(subparsers)
     add_deps_command(subparsers)
-    add_md5_command(subparsers)
     add_stages_command(subparsers)
     add_targets_command(subparsers)
     add_python_path_command(subparsers)

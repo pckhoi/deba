@@ -2,18 +2,45 @@
 
 Smart pipeline framework that knows how to analyze your Python scripts (without running) and generate Make rules for you. If you specify script prerequisites and targets within the script itself, Bolo can pick them up automatically based on pre-defined patterns and write Make rules accordingly. In addition, Bolo mandates a few good rules for sane project management.
 
-## Table of Contents
+- [Bolo](#bolo)
+  - [Getting Started](#getting-started)
+  - [Terms & Concepts](#terms--concepts)
+    - [Prerequisite](#prerequisite)
+    - [Target](#target)
+    - [Stage](#stage)
+    - [Pattern](#pattern)
+  - [Configuration](#configuration)
+  - [Folder structure](#folder-structure)
+  - [Module Loading](#module-loading)
 
 ## Getting Started
 
 ## Terms & Concepts
 
-- **Stage**:
-- **Prerequisite**:
-- **Target**:
-- **Pattern**:
+Bolo is a tool that complements GNU Make therefore borrows many terms directly from Make, and introduces some of its own.
 
-## Pattern Format
+### Prerequisite
+
+Prerequisite in Make refers to assets/source files that when updated retrigger a build. In the context of Bolo, we're not building binaries but rather transform data of one kind to another. Prerequisite in this context means input data.
+
+### Target
+
+Target in Make refers build artifacts and/or resulting binaries. In the context of Bolo, target refers to output data.
+
+### Stage
+
+A stage is a group of scripts with the same execution order. When using Bolo, you must declare stage names in [bolo.yaml](#configuration) and put your scripts under folders named after the stages. Stage execution order is the same order as specified in bolo.yaml. Bolo enforces that order by forcing scripts to prefix their targets with the stage name and preventing scripts from reading targets of later stages.
+
+### Pattern
+
+Bolo relies on patterns declared by the user to scan the scripts for prerequisites and targets. A pattern must have the form `<function call>(<prerequisite or target string>)`. Here's how each part is read:
+
+- `function call`:
+  - can be plain function call e.g. `pd.read_csv`
+  - can be nested e.g. `pd.read_csv(bolo.data(<prerequisite or target string>))`
+  - can match names in scope by using glob pattern between backticks e.g. `` `df_*`.to_csv ``, which can match `df_09.to_csv` or `df_cleaned.to_csv`. Refers to [fnmatch](https://docs.python.org/3/library/fnmatch.html) to learn what glob patterns can be used between backticks.
+- `prerequisite or target string`:
+  - must be a regular expression that matches intended prerequisites or targets. For example if I want to detect all prerequisites that ends with `.csv`, I can use `pd.read_csv(r'.+\.csv')`.
 
 ## Configuration
 
@@ -21,9 +48,7 @@ Bolo configuration is read from a file called `bolo.yaml`. This file should be i
 as `Makefile`. Here's an example:
 
 ```yaml
-# A stage is a folder that houses scripts of similar execution order. Stage execution order is the
-# same as specified order. Bolo enforce that order by forcing scripts to prefix their targets with
-# the stage name and preventing scripts from reading targets of later stages.
+# A stage is a folder that houses scripts of similar execution order.
 stages:
   # stage name is also the folder name
   - name: clean
@@ -55,6 +80,7 @@ patterns:
   # target patterns are patterns that bolo look for in scripts to determine their targets
   targets:
     - "`*`.to_csv(bolo.data(r'.+\\.csv'))"
+
 # # overrides are Make rules that you want to include manually. Each entry is equivalent to a Make rule
 # # of this form:
 # #     [target]: [prerequisites]

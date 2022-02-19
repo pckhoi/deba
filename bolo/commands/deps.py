@@ -127,9 +127,9 @@ def exec(conf: Config, args: argparse.Namespace):
             for script_name, script_path in stage.scripts():
                 write_deps(conf, stage, loader, f, script_name, script_path)
     else:
-        if conf.overrides is not None:
-            os.makedirs(conf.bolo_dir, exist_ok=True)
-            with open(conf.main_deps_filepath, "w") as f:
+        os.makedirs(conf.bolo_dir, exist_ok=True)
+        with open(conf.main_deps_filepath, "w") as f:
+            if conf.overrides is not None:
                 for rule in conf.overrides:
                     f.write(
                         "%s &: %s\n\t%s\n\n"

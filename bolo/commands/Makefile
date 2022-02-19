@@ -1,6 +1,7 @@
 SHELL = /bin/bash
 
 OS := $(shell uname -s)
+BOLO_MD5 := $(if $(findstring Darwin,$(OS)),md5,md5sum)
 PYTHON := python
 BOLO_DIR := .bolo
 BOLO_FILE := bolo.yaml
@@ -30,7 +31,7 @@ endef
 # calculate md5
 $(BOLO_MD5_DIR)/%.md5: % | $(BOLO_MD5_DIR)
 	@-mkdir -p $(dir $@) 2>/dev/null
-	@$(PYTHON) -m bolo md5 $< $@
+	$(if $(filter-out $(shell cat $@ 2>/dev/null),$(shell $(BOLO_MD5) $<)),$(BOLO_MD5) $< > $@)
 
 $(BOLO_DEPS_DIR)/%.d: %/*.py $(BOLO_FILE) | $(BOLO_DEPS_DIR)
 	$(PYTHON) -m bolo deps --stage $*

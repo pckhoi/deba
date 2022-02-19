@@ -70,6 +70,7 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
                 '  df.to_csv("fuse/data.csv")',
             ],
         )
+        self.write_file("fuse/b.pyc", [""])
 
         args = parser.parse_args(["deps", "--stage", "clean"])
         args.exec(conf, args)

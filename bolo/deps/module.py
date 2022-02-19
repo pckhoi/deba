@@ -207,6 +207,10 @@ def trim_suffix(s: str, suffix: str) -> str:
     return s
 
 
+class ParseError(Exception):
+    pass
+
+
 @define
 class Loader(object):
     paths: typing.List[str]
@@ -237,7 +241,10 @@ class Loader(object):
         if origin in self.module_asts:
             return self.module_asts[origin]
         with open(origin, "r") as f:
-            root = ast.parse(f.read(), os.path.split(origin)[-1])
+            try:
+                root = ast.parse(f.read(), os.path.split(origin)[-1])
+            except Exception as e:
+                raise ParseError("error parsing %s" % origin, e)
             self.module_asts[origin] = root
             return root
 
@@ -247,7 +254,7 @@ class Loader(object):
         parent_module_paths: typing.Union[typing.List[str], None] = None,
     ) -> typing.Union[object, None]:
         spec = self.find_spec(module_name, parent_module_paths)
-        if spec is None or spec.origin is None:
+        if spec is None or spec.origin is None or spec.origin.endswith(".pyc"):
             return None
         if spec.origin in self.module_nodes:
             return self.module_nodes[spec.origin]

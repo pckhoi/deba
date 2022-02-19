@@ -24,7 +24,7 @@ class Stage(object):
     common_prerequisites: typing.List[str] = doc(
         "list of common prerequisites of every scripts in this stage"
     )
-    ignored_outputs: typing.List[str] = doc(
+    ignored_targets: typing.List[str] = doc(
         "list of targets that will be ignored (not written to Makefile)"
     )
 
@@ -80,7 +80,7 @@ class Config(object):
     """Dirk configurations."""
 
     stages: typing.List[Stage] = doc(
-        "list of execution stages. The order of this list is also the order of execution. What this mean concretely is that scripts from a stage can only take output from earlier stages or the same stage as input.",
+        "list of execution stages. The order of this list is also the order of execution. What this mean concretely is that scripts from a stage can only take target from earlier stages or the same stage as prerequisite.",
         required=True,
     )
 
@@ -151,10 +151,6 @@ class Config(object):
     @property
     def main_deps_filepath(self) -> str:
         return os.path.join(self.bolo_dir, "main.d")
-
-    @property
-    def input_links_dir(self) -> str:
-        return os.path.join(self.bolo_dir, "input_links")
 
 
 _conf = None

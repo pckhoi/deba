@@ -15,38 +15,38 @@ class InvalidDependencyError(Exception):
     pass
 
 
-def validate_inputs(
+def validate_prerequisites(
     conf: Config, stage: Stage, ins: typing.List[str], rel_script_path: str
 ):
     ins_set = set()
     for filename in ins:
         if filename in ins_set:
             print(
-                "WARNING: input %s of script %s found more than once"
+                "WARNING: prerequisite %s of script %s found more than once"
                 % (json.dumps(filename), rel_script_path)
             )
         ins_set.add(filename)
         if conf.is_data_from_latter_stages(stage.name, filename):
             raise InvalidDependencyError(
-                "input %s of script %s comes from a later stage"
+                "prerequisite %s of script %s comes from a later stage"
                 % (json.dumps(filename), rel_script_path)
             )
 
 
-def validate_outputs(
+def validate_targets(
     conf: Config, stage: Stage, outs: typing.List[str], rel_script_path: str
 ):
     outs_set = set()
     for filename in outs:
         if filename in outs_set:
             print(
-                "WARNING: output %s of script %s found more than once"
+                "WARNING: target %s of script %s found more than once"
                 % (json.dumps(filename), rel_script_path)
             )
         outs_set.add(filename)
         if not filename.startswith(stage.name + "/"):
             raise InvalidDependencyError(
-                "output %s of script %s must start with %s"
+                "target %s of script %s must start with %s"
                 % (
                     json.dumps(filename),
                     rel_script_path,
@@ -63,38 +63,38 @@ def write_deps(
     script_name: str,
     script_path: str,
 ):
-    ins, outs = find_dependencies(
+    prerequisites, targets = find_dependencies(
         loader,
         script_path,
-        conf.patterns.inputs or [],
-        conf.patterns.outputs or [],
+        conf.patterns.prerequisites or [],
+        conf.patterns.targets or [],
     )
 
-    if stage.ignored_outputs is not None:
-        outs = [s for s in outs if s not in stage.ignored_outputs]
+    if stage.ignored_targets is not None:
+        targets = [s for s in targets if s not in stage.ignored_targets]
 
     rel_script_path = os.path.join(stage.name, script_name)
-    validate_inputs(conf, stage, ins, rel_script_path)
-    validate_outputs(conf, stage, outs, rel_script_path)
+    validate_prerequisites(conf, stage, prerequisites, rel_script_path)
+    validate_targets(conf, stage, targets, rel_script_path)
 
     if conf.overrides is not None:
         for idx, exec_rule in enumerate(conf.overrides):
-            if exec_rule.target_set == set(outs):
+            if exec_rule.target_set == set(targets):
                 print(
-                    "    override #%d matches outputs, skipping script %s"
+                    "    override #%d matches targets, skipping script %s"
                     % (idx, script_name)
                 )
                 return
 
     # write rule for this script
-    targets = " ".join(["$(BOLO_DATA_DIR)/%s" % name for name in outs])
+    targets = " ".join(["$(BOLO_DATA_DIR)/%s" % name for name in targets])
     deps_file.write(
         "%s &: %s %s | $(BOLO_DATA_DIR)/%s\n\t$(call bolo_execute,%s)\n\n"
         % (
             targets,
             "$(BOLO_MD5_DIR)/%s.md5" % (rel_script_path),
             " ".join(
-                ["$(BOLO_DATA_DIR)/%s" % name for name in ins]
+                ["$(BOLO_DATA_DIR)/%s" % name for name in prerequisites]
                 + (
                     [str(p) for p in stage.common_prerequisites]
                     if stage.common_prerequisites is not None

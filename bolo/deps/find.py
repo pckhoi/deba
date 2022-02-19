@@ -49,8 +49,8 @@ def build_module_from_filepath(loader: Loader, filepath: str) -> Node:
 def find_dependencies(
     loader: Loader,
     filepath: str,
-    input_tmpls: typing.List[ExprPattern],
-    output_tmpls: typing.List[ExprPattern],
+    prerequisite_targets: typing.List[ExprPattern],
+    target_patterns: typing.List[ExprPattern],
 ) -> typing.Tuple[typing.List[str], typing.List[str]]:
     module_node = build_module_from_filepath(loader, filepath)
     stack = Stack()
@@ -61,8 +61,8 @@ def find_dependencies(
                 stmt,
                 module_node.spec,
                 stack.push(),
-                input_tmpls,
-                output_tmpls,
+                prerequisite_targets,
+                target_patterns,
             )
         else:
             loader.populate_scope(module_node.spec, stack, module_node.ast, stmt)
@@ -74,24 +74,24 @@ def scan(
     node: ast.AST,
     spec: ModuleSpec,
     stack: Stack,
-    input_tmpls: typing.List[ExprPattern],
-    output_tmpls: typing.List[ExprPattern],
+    prerequisite_patterns: typing.List[ExprPattern],
+    target_patterns: typing.List[ExprPattern],
 ) -> typing.Tuple[typing.List[str], typing.List[str]]:
-    inputs, outputs = [], []
+    prerequisites, targets = [], []
     for stmt in node.body:
         loader.populate_scope(spec, stack, node, stmt)
         for t in ast.walk(stmt):
             if isinstance(t, ast.Call):
-                for tmpl in output_tmpls:
+                for tmpl in target_patterns:
                     s = tmpl.match_node(stack, t)
                     if s is not None:
-                        outputs.append(s)
+                        targets.append(s)
                         break
                 else:
-                    for tmpl in input_tmpls:
+                    for tmpl in prerequisite_patterns:
                         s = tmpl.match_node(stack, t)
                         if s is not None:
-                            inputs.append(s)
+                            prerequisites.append(s)
                             break
                     else:
                         func = stack.dereference(t.func)
@@ -102,9 +102,9 @@ def scan(
                             func.ast,
                             func.spec,
                             stack.push(),
-                            input_tmpls,
-                            output_tmpls,
+                            prerequisite_patterns,
+                            target_patterns,
                         )
-                        inputs = inputs + ins
-                        outputs = outputs + outs
-    return inputs, outputs
+                        prerequisites = prerequisites + ins
+                        targets = targets + outs
+    return prerequisites, targets

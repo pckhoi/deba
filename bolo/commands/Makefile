@@ -22,7 +22,8 @@ cleanbolo:
 define bolo_execute
 @start_time=$$SECONDS && \
 echo "running $(1)" | sed $$'s,.*,\e[1;37m&\e[m,' && \
-(set -o pipefail; PYTHONPATH=$(BOLO_PYTHON_PATH) $(PYTHON) $(1) 2>&1>&3 | sed $$'s,.*,    \e[31m&\e[m,' >&2 )3>&1 | sed $$'s,.*,    \e[1;30m&\e[m,' && \
+set -o pipefail && \
+(PYTHONPATH=$(BOLO_PYTHON_PATH) $(PYTHON) $(1) 2>&1>&3 | sed $$'s,.*,    \e[31m&\e[m,' >&2 )3>&1 | sed $$'s,.*,    \e[1;30m&\e[m,' && \
 echo "    script completed in $$((SECONDS - start_time)) seconds" | sed $$'s,.*,\e[1;34m&\e[m,'
 endef
 

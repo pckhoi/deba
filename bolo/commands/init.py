@@ -55,34 +55,36 @@ def exec(conf: Config, args: argparse.Namespace):
             targets = args.targets
 
         # prompt for patterns
-        input_patterns = []
-        if args.input_patterns is None:
+        prerequisite_patterns = []
+        if args.prerequisite_patterns is None:
             while True:
-                cont = input("add an input pattern? (Y/n)")
+                cont = input("add an prerequisite pattern? (Y/n)")
                 if cont != "" and cont.strip().lower() != "y":
                     break
-                input_patterns.append(input("  input pattern: ").strip())
-            if len(input_patterns) == 0:
-                raise ValueError("must add at least 1 input pattern")
+                prerequisite_patterns.append(input("  prerequisite pattern: ").strip())
+            if len(prerequisite_patterns) == 0:
+                raise ValueError("must add at least 1 prerequisite pattern")
         else:
-            input_patterns = args.input_patterns
-        output_patterns = []
-        if args.output_patterns is None:
+            prerequisite_patterns = args.prerequisite_patterns
+        target_patterns = []
+        if args.target_patterns is None:
             while True:
-                cont = input("add an output pattern? (Y/n)")
+                cont = input("add an target pattern? (Y/n)")
                 if cont != "" and cont.strip().lower() != "y":
                     break
-                output_patterns.append(input("  output pattern: ").strip())
-            if len(output_patterns) == 0:
-                raise ValueError("must add at least 1 output pattern")
+                target_patterns.append(input("  target pattern: ").strip())
+            if len(target_patterns) == 0:
+                raise ValueError("must add at least 1 target pattern")
         else:
-            output_patterns = args.output_patterns
+            target_patterns = args.target_patterns
 
         # write bolo config
         conf = Config(
             stages=stages,
             targets=targets,
-            patterns=ExprPatterns(inputs=input_patterns, outputs=output_patterns),
+            patterns=ExprPatterns(
+                prerequisites=prerequisite_patterns, targets=target_patterns
+            ),
         )
         with open(bolo_file, "w") as f:
             f.write(yaml_dump(conf))
@@ -120,15 +122,15 @@ def add_subcommand(
         help="target files. Each time your run `make bolo`, these files will be updated if any of their dependencies have been updated since.",
     )
     parser.add_argument(
-        "--input-patterns",
+        "--prerequisite-patterns",
         type=str,
         nargs="*",
-        help="input patterns that Dirk uses to find input files for each script",
+        help="prerequisite patterns that Dirk uses to find prerequisites for each script",
     )
     parser.add_argument(
-        "--output-patterns",
+        "--target-patterns",
         type=str,
         nargs="*",
-        help="output patterns that Dirk uses to find output files for each script",
+        help="target patterns that Dirk uses to find targets for each script",
     )
     return parser

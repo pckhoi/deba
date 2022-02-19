@@ -15,12 +15,12 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
         conf = Config(
             stages=[
                 Stage(name="clean", ignored_scripts=["d.py"]),
-                Stage(name="fuse", ignored_outputs=["duplicates.csv"]),
+                Stage(name="fuse", ignored_targets=["duplicates.csv"]),
             ],
             targets=["fuse/data.csv"],
             patterns=ExprPatterns(
-                inputs=[r'read_csv(".+\\.csv")'],
-                outputs=[r'`*`.to_csv(".+\\.csv")'],
+                prerequisites=[r'read_csv(".+\\.csv")'],
+                targets=[r'`*`.to_csv(".+\\.csv")'],
             ),
             overrides=[
                 ExecutionRule(

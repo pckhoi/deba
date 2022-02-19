@@ -195,17 +195,17 @@ def expr_templates(l: typing.Union[typing.List[str], None]) -> typing.List[ExprP
 
 @define(field_transformer=field_transformer(globals()))
 class ExprPatterns(object):
-    """Expression templates."""
+    """Expression patterns."""
 
-    inputs: typing.List[ExprPattern] = doc(
-        "input expression templates", converter=expr_templates
+    prerequisites: typing.List[ExprPattern] = doc(
+        "prerequisite expression patterns", converter=expr_templates
     )
-    outputs: typing.List[ExprPattern] = doc(
-        "output expression templates", converter=expr_templates
+    targets: typing.List[ExprPattern] = doc(
+        "target expression patterns", converter=expr_templates
     )
 
     def as_dict(self) -> typing.Dict:
         return {
-            "inputs": [obj.text for obj in self.inputs],
-            "outputs": [obj.text for obj in self.outputs],
+            "prerequisites": [obj.text for obj in self.prerequisites],
+            "targets": [obj.text for obj in self.targets],
         }

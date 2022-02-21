@@ -2,10 +2,10 @@ import argparse
 import pathlib
 import shutil
 
-from bolo.commands.decorators import subcommand
-from bolo.config import Config, Stage
-from bolo.deps.expr import ExprPatterns
-from bolo.serialize import yaml_dump
+from deba.commands.decorators import subcommand
+from deba.config import Config, Stage
+from deba.deps.expr import ExprPatterns
+from deba.serialize import yaml_dump
 
 
 def is_line_found(file: pathlib.Path, expected_line: str) -> bool:
@@ -26,8 +26,8 @@ def ensure_line(file: pathlib.Path, line: str):
 
 def exec(conf: Config, args: argparse.Namespace):
     cwd = pathlib.Path.cwd()
-    bolo_file = cwd / "bolo.yaml"
-    if not bolo_file.is_file():
+    deba_file = cwd / "deba.yaml"
+    if not deba_file.is_file():
         # prompt for stages
         stages = []
         if args.stages is None:
@@ -78,7 +78,7 @@ def exec(conf: Config, args: argparse.Namespace):
         else:
             target_patterns = args.target_patterns
 
-        # write bolo config
+        # write deba config
         conf = Config(
             stages=stages,
             targets=targets,
@@ -86,20 +86,20 @@ def exec(conf: Config, args: argparse.Namespace):
                 prerequisites=prerequisite_patterns, targets=target_patterns
             ),
         )
-        with open(bolo_file, "w") as f:
+        with open(deba_file, "w") as f:
             f.write(yaml_dump(conf))
-        print("wrote bolo config to %s" % bolo_file.name)
+        print("wrote deba config to %s" % deba_file.name)
     else:
-        print("bolo config found, skipping config initialization")
+        print("deba config found, skipping config initialization")
 
     # write make config
-    mk_file = cwd / "bolo.mk"
+    mk_file = cwd / "deba.mk"
     shutil.copyfile(pathlib.Path(__file__).parent / "Makefile", mk_file)
     print("wrote Make config to %s" % mk_file.name)
-    ensure_line(cwd / "Makefile", "include bolo.mk")
+    ensure_line(cwd / "Makefile", "include deba.mk")
 
     # write .gitignore
-    ensure_line(cwd / ".gitignore", ".bolo")
+    ensure_line(cwd / ".gitignore", ".deba")
 
 
 @subcommand(exec=exec, open_config=False)
@@ -107,7 +107,7 @@ def add_subcommand(
     subparsers: argparse._SubParsersAction,
 ) -> argparse.ArgumentParser:
     parser = subparsers.add_parser(
-        name="init", description="initialize bolo config in the current folder"
+        name="init", description="initialize deba config in the current folder"
     )
     parser.add_argument(
         "--stages",
@@ -119,7 +119,7 @@ def add_subcommand(
         "--targets",
         type=str,
         nargs="*",
-        help="target files. Each time your run `make bolo`, these files will be updated if any of their dependencies have been updated since.",
+        help="target files. Each time your run `make deba`, these files will be updated if any of their dependencies have been updated since.",
     )
     parser.add_argument(
         "--prerequisite-patterns",

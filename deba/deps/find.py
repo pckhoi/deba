@@ -3,9 +3,9 @@ import os
 from importlib.machinery import ModuleSpec
 import typing
 
-from bolo.deps.module import Loader, Node, Stack
+from deba.deps.module import Loader, Node, Stack
 
-from bolo.deps.expr import ExprPattern
+from deba.deps.expr import ExprPattern
 
 
 class ModuleParseError(ValueError):

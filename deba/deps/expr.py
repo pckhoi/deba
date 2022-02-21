@@ -5,8 +5,8 @@ import ast
 from fnmatch import fnmatchcase
 
 from attrs import define, field
-from bolo.attrs_utils import field_transformer, doc
-from bolo.deps.module import Stack
+from deba.attrs_utils import field_transformer, doc
+from deba.deps.module import Stack
 
 
 class ExprTemplateParseError(ValueError):
@@ -20,7 +20,7 @@ class ExprPattern(object):
     file_pat: object = field()
     patterns: typing.List[str] = field(factory=list)
     backtick_name_pat: typing.ClassVar[object] = re.compile(
-        r"^bolo_backtick_pat_(\d{3})$"
+        r"^deba_backtick_pat_(\d{3})$"
     )
 
     @node.validator
@@ -82,7 +82,7 @@ class ExprPattern(object):
                         )
                     next_backtick += e.offset
                     pattern = line[e.offset : next_backtick]
-                    lines[e.lineno - 1] = "%sbolo_backtick_pat_%03d%s" % (
+                    lines[e.lineno - 1] = "%sdeba_backtick_pat_%03d%s" % (
                         line[: e.offset - 1],
                         len(patterns),
                         line[next_backtick + 1 :],

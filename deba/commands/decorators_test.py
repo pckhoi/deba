@@ -2,8 +2,8 @@ import argparse
 import unittest
 import unittest.mock
 
-from bolo.commands.decorators import subcommand
-from bolo.config import Config, Stage
+from deba.commands.decorators import subcommand
+from deba.config import Config, Stage
 
 
 def spy():

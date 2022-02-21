@@ -1,6 +1,6 @@
 import pathlib
 
-from bolo.config import get_config
+from deba.config import get_config
 
 
 def data(s: str) -> pathlib.Path:

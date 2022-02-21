@@ -4,11 +4,11 @@ import json
 import os
 import typing
 
-from bolo.commands.decorators import subcommand
-from bolo.config import Config, Stage
+from deba.commands.decorators import subcommand
+from deba.config import Config, Stage
 
-from bolo.deps.module import Loader
-from bolo.deps.find import find_dependencies
+from deba.deps.module import Loader
+from deba.deps.find import find_dependencies
 
 
 class InvalidDependencyError(Exception):
@@ -87,14 +87,14 @@ def write_deps(
                 return
 
     # write rule for this script
-    targets = " ".join(["$(BOLO_DATA_DIR)/%s" % name for name in targets])
+    targets = " ".join(["$(DEBA_DATA_DIR)/%s" % name for name in targets])
     deps_file.write(
-        "%s &: %s %s | $(BOLO_DATA_DIR)/%s\n\t$(call bolo_execute,%s)\n\n"
+        "%s &: %s %s | $(DEBA_DATA_DIR)/%s\n\t$(call deba_execute,%s)\n\n"
         % (
             targets,
-            "$(BOLO_MD5_DIR)/%s.md5" % (rel_script_path),
+            "$(DEBA_MD5_DIR)/%s.md5" % (rel_script_path),
             " ".join(
-                ["$(BOLO_DATA_DIR)/%s" % name for name in prerequisites]
+                ["$(DEBA_DATA_DIR)/%s" % name for name in prerequisites]
                 + (
                     [str(p) for p in stage.common_prerequisites]
                     if stage.common_prerequisites is not None
@@ -121,13 +121,13 @@ def exec(conf: Config, args: argparse.Namespace):
         with open(stage.deps_filepath, "w") as f:
             # write rule for data dir
             f.write(
-                "$(BOLO_DATA_DIR)/%s: ; @-mkdir -p $@ 2>/dev/null\n\n" % (stage.name)
+                "$(DEBA_DATA_DIR)/%s: ; @-mkdir -p $@ 2>/dev/null\n\n" % (stage.name)
             )
 
             for script_name, script_path in stage.scripts():
                 write_deps(conf, stage, loader, f, script_name, script_path)
     else:
-        os.makedirs(conf.bolo_dir, exist_ok=True)
+        os.makedirs(conf.deba_dir, exist_ok=True)
         with open(conf.main_deps_filepath, "w") as f:
             if conf.overrides is not None:
                 for rule in conf.overrides:
@@ -136,7 +136,7 @@ def exec(conf: Config, args: argparse.Namespace):
                         % (
                             rule.target_str,
                             " ".join(
-                                "$(BOLO_DATA_DIR)/%s" % d for d in rule.prerequisites
+                                "$(DEBA_DATA_DIR)/%s" % d for d in rule.prerequisites
                             ),
                             rule.recipe,
                         )

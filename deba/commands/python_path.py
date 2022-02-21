@@ -1,8 +1,8 @@
 import argparse
 import os
 
-from bolo.commands.decorators import subcommand
-from bolo.config import Config
+from deba.commands.decorators import subcommand
+from deba.config import Config
 
 
 def exec(conf: Config, args: argparse.Namespace):

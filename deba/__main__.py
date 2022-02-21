@@ -1,4 +1,4 @@
-from bolo.commands import get_parser
+from deba.commands import get_parser
 
 parser = get_parser()
 

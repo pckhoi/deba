@@ -1,15 +1,15 @@
 import unittest
 import argparse
 
-from bolo.commands.deps import add_subcommand
-from bolo.config import Config, ExecutionRule, Stage
-from bolo.deps.expr import ExprPatterns
-from bolo.test_utils import TempDirMixin
+from deba.commands.deps import add_subcommand
+from deba.config import Config, ExecutionRule, Stage
+from deba.deps.expr import ExprPatterns
+from deba.test_utils import TempDirMixin
 
 
 class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
     def test_run(self):
-        parser = argparse.ArgumentParser("bolo")
+        parser = argparse.ArgumentParser("deba")
         subparsers = parser.add_subparsers()
         add_subcommand(subparsers)
         conf = Config(
@@ -76,12 +76,12 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
         args.exec(conf, args)
 
         self.assertFileContent(
-            ".bolo/deps/clean.d",
+            ".deba/deps/clean.d",
             [
-                "$(BOLO_DATA_DIR)/clean: ; @-mkdir -p $@ 2>/dev/null",
+                "$(DEBA_DATA_DIR)/clean: ; @-mkdir -p $@ 2>/dev/null",
                 "",
-                "$(BOLO_DATA_DIR)/clean/a_output.csv &: $(BOLO_MD5_DIR)/clean/a.py.md5 $(BOLO_DATA_DIR)/raw/a_input.csv | $(BOLO_DATA_DIR)/clean",
-                "\t$(call bolo_execute,clean/a.py)",
+                "$(DEBA_DATA_DIR)/clean/a_output.csv &: $(DEBA_MD5_DIR)/clean/a.py.md5 $(DEBA_DATA_DIR)/raw/a_input.csv | $(DEBA_DATA_DIR)/clean",
+                "\t$(call deba_execute,clean/a.py)",
                 "",
                 "",
             ],
@@ -91,12 +91,12 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
         args.exec(conf, args)
 
         self.assertFileContent(
-            ".bolo/deps/fuse.d",
+            ".deba/deps/fuse.d",
             [
-                "$(BOLO_DATA_DIR)/fuse: ; @-mkdir -p $@ 2>/dev/null",
+                "$(DEBA_DATA_DIR)/fuse: ; @-mkdir -p $@ 2>/dev/null",
                 "",
-                "$(BOLO_DATA_DIR)/fuse/data.csv &: $(BOLO_MD5_DIR)/fuse/a.py.md5 $(BOLO_DATA_DIR)/clean/b_output.csv | $(BOLO_DATA_DIR)/fuse",
-                "\t$(call bolo_execute,fuse/a.py)",
+                "$(DEBA_DATA_DIR)/fuse/data.csv &: $(DEBA_MD5_DIR)/fuse/a.py.md5 $(DEBA_DATA_DIR)/clean/b_output.csv | $(DEBA_DATA_DIR)/fuse",
+                "\t$(call deba_execute,fuse/a.py)",
                 "",
                 "",
             ],
@@ -106,12 +106,12 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
         args.exec(conf, args)
 
         self.assertFileContent(
-            ".bolo/main.d",
+            ".deba/main.d",
             [
-                "$(BOLO_DATA_DIR)/clean/b_output.csv &: $(BOLO_DATA_DIR)/raw/my_b_input.csv",
+                "$(DEBA_DATA_DIR)/clean/b_output.csv &: $(DEBA_DATA_DIR)/raw/my_b_input.csv",
                 "\tmy_command",
                 "",
-                "$(BOLO_DATA_DIR)/clean/c.csv &: $(BOLO_DATA_DIR)/raw/c.csv",
+                "$(DEBA_DATA_DIR)/clean/c.csv &: $(DEBA_DATA_DIR)/raw/c.csv",
                 "\tmy_other_command",
                 "",
                 "",

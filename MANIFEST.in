@@ -1,1 +1,1 @@
-include bolo/commands/Makefile
+include deba/commands/Makefile

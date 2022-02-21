@@ -4,9 +4,9 @@ import pathlib
 
 from attrs import define, validators
 
-from bolo.attrs_utils import field_transformer, doc
-from bolo.serialize import yaml_dump, yaml_load
-from bolo.deps.expr import ExprPatterns
+from deba.attrs_utils import field_transformer, doc
+from deba.serialize import yaml_dump, yaml_load
+from deba.deps.expr import ExprPatterns
 
 
 @define(field_transformer=field_transformer(globals()), slots=False)
@@ -71,8 +71,8 @@ class ExecutionRule(object):
     @property
     def target_str(self) -> str:
         if type(self.target) is str:
-            return "$(BOLO_DATA_DIR)/%s" % self.target
-        return " ".join("$(BOLO_DATA_DIR)/%s" % s for s in self.target)
+            return "$(DEBA_DATA_DIR)/%s" % self.target
+        return " ".join("$(DEBA_DATA_DIR)/%s" % s for s in self.target)
 
 
 @define(field_transformer=field_transformer(globals()))
@@ -89,14 +89,14 @@ class Config(object):
     )
 
     targets: typing.List[str] = doc(
-        "explicit targets to generate when user run `make bolo`"
+        "explicit targets to generate when user run `make deba`"
     )
     patterns: ExprPatterns = doc("expression templates")
     overrides: typing.List[ExecutionRule] = doc(
         "list of make rule overrides. If a make rule with the same targets exists, replace it with the corresponding rule defined here."
     )
     python_path: typing.List[str] = doc(
-        "additional search paths for module files. The directory that contains bolo.yaml file will be prepended to this list. This list is then concatenated as PYTHONPATH env var during script execution."
+        "additional search paths for module files. The directory that contains deba.yaml file will be prepended to this list. This list is then concatenated as PYTHONPATH env var during script execution."
     )
     data_dir: str = doc(
         "keep all generated data in this folder",
@@ -131,7 +131,7 @@ class Config(object):
         return False
 
     def save(self):
-        with open(os.path.join(self._root_dir, "bolo.yaml"), "w") as f:
+        with open(os.path.join(self._root_dir, "deba.yaml"), "w") as f:
             f.write(yaml_dump(self))
 
     @property
@@ -141,16 +141,16 @@ class Config(object):
         return os.getcwd()
 
     @property
-    def bolo_dir(self) -> str:
-        return os.path.join(self._root_dir, ".bolo")
+    def deba_dir(self) -> str:
+        return os.path.join(self._root_dir, ".deba")
 
     @property
     def deps_dir(self) -> str:
-        return os.path.join(self.bolo_dir, "deps")
+        return os.path.join(self.deba_dir, "deps")
 
     @property
     def main_deps_filepath(self) -> str:
-        return os.path.join(self.bolo_dir, "main.d")
+        return os.path.join(self.deba_dir, "main.d")
 
 
 _conf = None
@@ -161,10 +161,10 @@ def get_config() -> Config:
     if _conf is not None:
         return _conf
     try:
-        with open("bolo.yaml", "r") as f:
+        with open("deba.yaml", "r") as f:
             _conf = yaml_load(f.read(), Config)
         return _conf
     except FileNotFoundError:
         raise FileNotFoundError(
-            "bolo config file not found: %s" % (pathlib.Path().cwd() / "bolo.yaml")
+            "deba config file not found: %s" % (pathlib.Path().cwd() / "deba.yaml")
         )

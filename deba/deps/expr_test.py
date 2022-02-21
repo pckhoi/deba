@@ -5,9 +5,9 @@ import typing
 import ast
 
 from attrs import define
-from bolo.deps.expr import ExprPattern, ExprTemplateParseError
-from bolo.deps.module import Node, Stack
-from bolo.test_utils import ASTMixin
+from deba.deps.expr import ExprPattern, ExprTemplateParseError
+from deba.deps.module import Node, Stack
+from deba.test_utils import ASTMixin
 
 
 class ExprTemplateTestCase(ASTMixin, TestCase):
@@ -69,7 +69,7 @@ class ExprTemplateTestCase(ASTMixin, TestCase):
                 ast.Call(
                     ast.Attribute(
                         ast.Name(
-                            "bolo_backtick_pat_000",
+                            "deba_backtick_pat_000",
                             ctx=ast.Load(),
                         ),
                         attr="to_csv",

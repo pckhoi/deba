@@ -156,13 +156,18 @@ class Config(object):
 _conf = None
 
 
-def get_config() -> Config:
+def get_config(root: typing.Union[str, None] = None) -> Config:
     global _conf
     if _conf is not None:
         return _conf
     try:
-        with open("deba.yaml", "r") as f:
+        deba_path = "deba.yaml"
+        if root is not None:
+            deba_path = os.path.join(root, deba_path)
+        with open(deba_path, "r") as f:
             _conf = yaml_load(f.read(), Config)
+        if root is not None:
+            _conf.root_dir = root
         return _conf
     except FileNotFoundError:
         raise FileNotFoundError(

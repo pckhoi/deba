@@ -31,50 +31,59 @@ def exec(conf: Config, args: argparse.Namespace):
         # prompt for stages
         stages = []
         if args.stages is None:
+            print(
+                "A stage is a group of scripts that serve the same purpose. "
+                "Examples of stage are: 'OCR', 'NER', 'cleaning', 'record_linkage', etc."
+            )
             while True:
-                cont = input("add a stage? (Y/n)")
+                cont = input("Add a stage? (Y/n) ")
                 if cont != "" and cont.strip().lower() != "y":
                     break
-                stages.append(Stage(name=input("  stage name:")))
-            if len(stages) == 0:
-                raise ValueError("must add at least 1 stage")
+                stages.append(Stage(name=input("  stage name: ")))
+            print()
         else:
             stages = [Stage(name=name.strip()) for name in args.stages]
 
         # prompt for targets
         targets = []
         if args.targets is None:
+            print("A target is an output of the entire pipeline.")
             while True:
-                cont = input("add a target? (Y/n)")
+                cont = input("Add a target? (Y/n) ")
                 if cont != "" and cont.strip().lower() != "y":
                     break
                 targets.append(input("  target: ").strip())
-            if len(targets) == 0:
-                raise ValueError("must add at least 1 target")
+            print()
         else:
             targets = args.targets
 
         # prompt for patterns
         prerequisite_patterns = []
         if args.prerequisite_patterns is None:
+            print(
+                "A prerequisite pattern tells Deba how to extract prerequisites from a script. "
+                "Visit https://github.com/pckhoi/deba#pattern to learn more."
+            )
             while True:
-                cont = input("add an prerequisite pattern? (Y/n)")
+                cont = input("Add a prerequisite pattern? (Y/n) ")
                 if cont != "" and cont.strip().lower() != "y":
                     break
                 prerequisite_patterns.append(input("  prerequisite pattern: ").strip())
-            if len(prerequisite_patterns) == 0:
-                raise ValueError("must add at least 1 prerequisite pattern")
+            print()
         else:
             prerequisite_patterns = args.prerequisite_patterns
         target_patterns = []
         if args.target_patterns is None:
+            print(
+                "A target pattern tells Deba how to extract targets from a script. "
+                "Visit https://github.com/pckhoi/deba#pattern to learn more."
+            )
             while True:
-                cont = input("add an target pattern? (Y/n)")
+                cont = input("Add a target pattern? (Y/n) ")
                 if cont != "" and cont.strip().lower() != "y":
                     break
                 target_patterns.append(input("  target pattern: ").strip())
-            if len(target_patterns) == 0:
-                raise ValueError("must add at least 1 target pattern")
+            print()
         else:
             target_patterns = args.target_patterns
 
@@ -88,9 +97,9 @@ def exec(conf: Config, args: argparse.Namespace):
         )
         with open(deba_file, "w") as f:
             f.write(yaml_dump(conf))
-        print("wrote deba config to %s" % deba_file.name)
+        print("Wrote deba config to %s" % deba_file.name)
     else:
-        print("deba config found, skipping config initialization")
+        print("Deba config found, skipping config initialization")
 
     # write make config
     mk_file = cwd / "deba.mk"
@@ -125,12 +134,12 @@ def add_subcommand(
         "--prerequisite-patterns",
         type=str,
         nargs="*",
-        help="prerequisite patterns that Dirk uses to find prerequisites for each script",
+        help="prerequisite patterns that Deba uses to find prerequisites for each script",
     )
     parser.add_argument(
         "--target-patterns",
         type=str,
         nargs="*",
-        help="target patterns that Dirk uses to find targets for each script",
+        help="target patterns that Deba uses to find targets for each script",
     )
     return parser

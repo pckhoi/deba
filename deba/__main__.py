@@ -1,6 +1,3 @@
-from deba.commands import get_parser
+from deba.commands import exec
 
-parser = get_parser()
-
-args = parser.parse_args()
-args.exec(None, args)
+exec()

@@ -1,4 +1,5 @@
 import unittest
+import tempfile
 import argparse
 
 from deba.commands.deps import add_subcommand

@@ -101,7 +101,7 @@ class Config(object):
     data_dir: str = doc(
         "keep all generated data in this folder",
         default="data",
-        converter=lambda s: s if type(s) is not str else s.strip("/"),
+        converter=lambda s: s if type(s) is not str else s.rstrip("/"),
         required=True,
     )
 

@@ -18,3 +18,16 @@ class DataDirCommandTestCase(unittest.TestCase):
         args.exec(conf, args)
 
         mock_print.assert_called_with("data")
+
+    @patch("builtins.print")
+    def test_run_with_absolute_data_dir(self, mock_print):
+        parser = argparse.ArgumentParser("deba")
+        subparsers = parser.add_subparsers()
+        add_subcommand(subparsers)
+        conf = Config(stages=[Stage(name="clean")], data_dir="/runner/_work/data")
+        self.assertEqual(conf.data_dir, "/runner/_work/data")
+
+        args = parser.parse_args(["dataDir"])
+        args.exec(conf, args)
+
+        mock_print.assert_called_with("/runner/_work/data")

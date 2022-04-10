@@ -162,6 +162,10 @@ patterns:
 # # dataDir is the directory that houses all data produced by scripts invoked with Deba. It is "data"
 # # by default. While writing scripts, you can call deba.data to prefix file paths with this directory.
 # dataDir: data
+
+# # md5Dir is the directory that contains md5 checksum files of all Python scripts. Make looks at timestamp
+# # of checksum files instead of the original files to avoid reprocessing data due to mere timestamp changes
+# md5Dir: .deba/md5
 ```
 
 ## Module Loading

@@ -104,6 +104,12 @@ class Config(object):
         converter=lambda s: s if type(s) is not str else s.rstrip("/"),
         required=True,
     )
+    md5_dir: str = doc(
+        "directory containing md5 checksums of all Python scripts",
+        default=".deba/md5",
+        converter=lambda s: s if type(s) is not str else s.rstrip("/"),
+        required=True,
+    )
 
     @property
     def script_search_paths(self) -> typing.List[str]:

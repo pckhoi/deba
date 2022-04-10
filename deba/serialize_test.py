@@ -15,6 +15,7 @@ class Person(object):
     birth_date: str = field(default=None)
     height: int = field(default=None)
     scores: typing.List[int] = field(default=None)
+    md5_dir: str = field(default=None)
     _gender: str = field(default=None)
 
 
@@ -44,7 +45,11 @@ class Animal(object):
 class YAMLTestCase(TestCase):
     def test_loads_simple(self):
         obj1 = Person(
-            name="John Doe", birth_date="10/02/2000", height=170, scores=[7, 8, 9]
+            name="John Doe",
+            birth_date="10/02/2000",
+            height=170,
+            scores=[7, 8, 9],
+            md5_dir="abc",
         )
         obj1._gender = "male"
         yaml_str = yaml_dump(obj1)
@@ -54,6 +59,7 @@ class YAMLTestCase(TestCase):
                 [
                     "birthDate: 10/02/2000",
                     "height: 170",
+                    "md5Dir: abc",
                     "name: John Doe",
                     "scores:",
                     "- 7",

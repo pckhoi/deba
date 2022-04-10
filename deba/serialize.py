@@ -11,7 +11,7 @@ def to_camel_case(s):
     return components[0] + "".join(x.title() for x in components[1:])
 
 
-word_break_pattern = re.compile(r"([a-z])([A-Z])")
+word_break_pattern = re.compile(r"([a-z0-9])([A-Z])")
 
 
 def to_snake_case(s):

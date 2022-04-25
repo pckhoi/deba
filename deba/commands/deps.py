@@ -26,7 +26,9 @@ def validate_prerequisites(
                 % (json.dumps(filename), rel_script_path)
             )
         ins_set.add(filename)
-        if conf.is_data_from_latter_stages(stage.name, filename):
+        if conf.enforce_stage_order and conf.is_data_from_latter_stages(
+            stage.name, filename
+        ):
             raise InvalidDependencyError(
                 "prerequisite %s of script %s comes from a later stage"
                 % (json.dumps(filename), rel_script_path)

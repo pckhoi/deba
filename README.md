@@ -21,7 +21,7 @@ Deba is a framework designed specifically for data integration projects. The mai
 
 ### Code organization
 
-Deba requires your scripts to be organized into stages. By stages, I mean works that can be grouped by purpose. An example of a staged workflow is OCR -> NER -> cleaning -> entity matching. Another property of stages is that they usually have a fixed order of running. For example, you usually want to run OCR before NER. To start using deba, organize your scripts into folders named after the stages, for example:
+Deba requires your scripts to be organized into stages. By stages, I mean works that can be grouped by purpose. An example of a staged workflow is OCR -> NER -> cleaning -> entity matching. To start using Deba, organize your scripts into folders named after the stages, for example:
 
 ```
 .
@@ -124,6 +124,10 @@ stages:
     # targets in this list will not be validated nor included in the Make rules.
     ignoredTargets:
       - duplicates.csv
+
+# # make sure that the stage execution order is the same as the specified order. Specifically, when this is
+# # set to true, Deba will prevent a script from reading outputs from a later stage.
+# enforeStageOrder: true
 
 # targets are the final targets of your entire pipeline. They will be updated when you run `make deba`.
 targets:

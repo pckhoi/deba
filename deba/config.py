@@ -84,6 +84,10 @@ class Config(object):
         required=True,
     )
 
+    enforce_stage_order: bool = doc(
+        "make sure that scripts cannot read outputs of later stages.", default=False
+    )
+
     root_dir: str = doc(
         "root directory from which to locate data and stage directories"
     )

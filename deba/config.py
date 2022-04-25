@@ -84,10 +84,6 @@ class Config(object):
         required=True,
     )
 
-    enforce_stage_order: bool = doc(
-        "make sure that scripts cannot read outputs of later stages.", default=False
-    )
-
     root_dir: str = doc(
         "root directory from which to locate data and stage directories"
     )
@@ -95,19 +91,28 @@ class Config(object):
     targets: typing.List[str] = doc(
         "explicit targets to generate when user run `make deba`"
     )
+
     patterns: ExprPatterns = doc("expression templates")
+
     overrides: typing.List[ExecutionRule] = doc(
         "list of make rule overrides. If a make rule with the same targets exists, replace it with the corresponding rule defined here."
     )
+
     python_path: typing.List[str] = doc(
         "additional search paths for module files. The directory that contains deba.yaml file will be prepended to this list. This list is then concatenated as PYTHONPATH env var during script execution."
     )
+
+    enforce_stage_order: bool = doc(
+        "make sure that scripts cannot read outputs of later stages.", default=False
+    )
+
     data_dir: str = doc(
         "keep all generated data in this folder",
         default="data",
         converter=lambda s: s if type(s) is not str else s.rstrip("/"),
         required=True,
     )
+
     md5_dir: str = doc(
         "directory containing md5 checksums of all Python scripts",
         default=".deba/md5",

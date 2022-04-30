@@ -118,3 +118,57 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
                 "",
             ],
         )
+
+    def test_skip_scripts_with_no_target(self):
+        parser = argparse.ArgumentParser("deba")
+        subparsers = parser.add_subparsers()
+        add_subcommand(subparsers)
+        conf = Config(
+            stages=[
+                Stage(name="fuse"),
+            ],
+            targets=["fuse/data.csv"],
+            patterns=ExprPatterns(
+                prerequisites=[r'read_csv(".+\\.csv")'],
+                targets=[r'`*`.to_csv(".+\\.csv")'],
+            ),
+            root_dir=self._dir.name,
+        )
+
+        self.write_file(
+            "fuse/a.py",
+            [
+                'if __name__ == "__main__":',
+                '  df = read_csv("raw/a_input.csv")',
+            ],
+        )
+        self.write_file(
+            "fuse/b.py",
+            [
+                'if __name__ == "__main__":',
+                '  pd.DataFrame([[0,1]]).to_csv("clean/b_output.csv")',
+            ],
+        )
+        self.write_file(
+            "fuse/c.py",
+            [
+                'if __name__ == "__main__":',
+                '  df = read_csv("raw/d_input.csv")',
+                '  df.to_csv("fuse/d_output.csv")',
+            ],
+        )
+
+        args = parser.parse_args(["deps", "--stage", "fuse"])
+        args.exec(conf, args)
+
+        self.assertFileContent(
+            ".deba/deps/fuse.d",
+            [
+                "$(DEBA_DATA_DIR)/fuse: ; @-mkdir -p $@ 2>/dev/null",
+                "",
+                "$(DEBA_DATA_DIR)/fuse/d_output.csv &: $(DEBA_MD5_DIR)/fuse/c.py.md5 $(DEBA_DATA_DIR)/raw/d_input.csv | $(DEBA_DATA_DIR)/fuse",
+                "	$(call deba_execute,fuse/c.py)",
+                "",
+                "",
+            ],
+        )

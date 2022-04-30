@@ -79,6 +79,14 @@ def write_deps(
     validate_prerequisites(conf, stage, prerequisites, rel_script_path)
     validate_targets(conf, stage, targets, rel_script_path)
 
+    if len(targets) == 0:
+        print("    no target, skipping script %s" % script_name)
+        return
+
+    if len(prerequisites) == 0:
+        print("    no prerequisite, skipping script %s" % script_name)
+        return
+
     if conf.overrides is not None:
         for idx, exec_rule in enumerate(conf.overrides):
             if exec_rule.target_set == set(targets):

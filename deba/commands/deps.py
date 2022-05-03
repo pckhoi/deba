@@ -106,7 +106,10 @@ def write_deps(
             " ".join(
                 ["$(DEBA_DATA_DIR)/%s" % name for name in prerequisites]
                 + (
-                    [str(p) for p in stage.common_prerequisites]
+                    [
+                        "$(DEBA_MD5_DIR)/%s.md5" % str(p)
+                        for p in stage.common_prerequisites
+                    ]
                     if stage.common_prerequisites is not None
                     else []
                 )

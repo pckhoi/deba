@@ -148,9 +148,7 @@ def exec(conf: Config, args: argparse.Namespace):
                         "%s &: %s\n\t%s\n\n"
                         % (
                             rule.target_str,
-                            " ".join(
-                                "$(DEBA_DATA_DIR)/%s" % d for d in rule.prerequisites
-                            ),
+                            " ".join(rule.prerequisites),
                             rule.recipe,
                         )
                     )

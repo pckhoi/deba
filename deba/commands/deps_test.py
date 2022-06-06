@@ -26,12 +26,12 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
             overrides=[
                 ExecutionRule(
                     target="clean/b_output.csv",
-                    prerequisites=["raw/my_b_input.csv"],
+                    prerequisites=["$(DEBA_DATA_DIR)/raw/my_b_input.csv"],
                     recipe="$(call deba_execute,my_command.py)",
                 ),
                 ExecutionRule(
                     target="clean/c.csv",
-                    prerequisites=["raw/c.csv"],
+                    prerequisites=["abc.dvc"],
                     recipe="$(call deba_execute,my_other_command.py)",
                 ),
             ],
@@ -112,7 +112,7 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
                 "$(DEBA_DATA_DIR)/clean/b_output.csv &: $(DEBA_DATA_DIR)/raw/my_b_input.csv",
                 "\t$(call deba_execute,my_command.py)",
                 "",
-                "$(DEBA_DATA_DIR)/clean/c.csv &: $(DEBA_DATA_DIR)/raw/c.csv",
+                "$(DEBA_DATA_DIR)/clean/c.csv &: abc.dvc",
                 "\t$(call deba_execute,my_other_command.py)",
                 "",
                 "",

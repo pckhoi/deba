@@ -57,6 +57,17 @@ def yaml_load(s, serializer_cls):
     return _deserialize(data, serializer_cls)
 
 
+def _is_type(a, b):
+    if not hasattr(a, "__origin__") or not hasattr(b, "__origin__"):
+        return a is b
+    if a.__origin__ is not b.__origin__:
+        return False
+    for i, a in enumerate(a.__args__):
+        if not _is_type(b.__args__[i], a):
+            return False
+    return True
+
+
 def _deserialize(data, serializer_cls):
     kwargs = dict()
     fields_dict = attr.fields_dict(serializer_cls)
@@ -93,7 +104,7 @@ def _deserialize(data, serializer_cls):
                 parent[name] = {k: _deserialize(e, el_cls) for k, e in value.items()}
             else:
                 parent[name] = value
-        elif field.type is typing.Union[str, typing.List[str]]:
+        elif _is_type(field.type, typing.Union[str, typing.List[str]]):
             if type(value) is str or (type(value) is list and type(value[0]) is str):
                 parent[name] = value
             else:

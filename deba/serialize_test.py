@@ -34,6 +34,7 @@ class Listing(object):
     user: Person = field(default=None)
     websites: typing.List[Website] = field(default=None)
     employments: typing.Dict[str, Employment] = field(default=None)
+    target: typing.Union[str, typing.List[str]] = field(default=None)
 
 
 @define()
@@ -114,3 +115,13 @@ class YAMLTestCase(TestCase):
     def test_loads_ignore_empty(self):
         obj = yaml_load('{"omnivore": true}', Animal)
         self.assertEqual(obj, Animal(omnivore=True))
+
+    def test_loads_union(self):
+        self.assertEqual(yaml_load('{"target": "abc"}', Listing), Listing(target="abc"))
+        self.assertEqual(
+            yaml_load('{"target": ["abc"]}', Listing), Listing(target=["abc"])
+        )
+        with self.assertRaises(TypeError):
+            yaml_load('{"target": [123]}', Listing)
+        with self.assertRaises(TypeError):
+            yaml_load('{"target": 456}', Listing)

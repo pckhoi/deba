@@ -27,12 +27,12 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
                 ExecutionRule(
                     target="clean/b_output.csv",
                     prerequisites=["raw/my_b_input.csv"],
-                    recipe="my_command",
+                    recipe="$(call deba_execute,my_command.py)",
                 ),
                 ExecutionRule(
                     target="clean/c.csv",
                     prerequisites=["raw/c.csv"],
-                    recipe="my_other_command",
+                    recipe="$(call deba_execute,my_other_command.py)",
                 ),
             ],
             root_dir=self._dir.name,
@@ -110,10 +110,10 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
             ".deba/main.d",
             [
                 "$(DEBA_DATA_DIR)/clean/b_output.csv &: $(DEBA_DATA_DIR)/raw/my_b_input.csv",
-                "\tmy_command",
+                "\t$(call deba_execute,my_command.py)",
                 "",
                 "$(DEBA_DATA_DIR)/clean/c.csv &: $(DEBA_DATA_DIR)/raw/c.csv",
-                "\tmy_other_command",
+                "\t$(call deba_execute,my_other_command.py)",
                 "",
                 "",
             ],

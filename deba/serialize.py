@@ -93,6 +93,14 @@ def _deserialize(data, serializer_cls):
                 parent[name] = {k: _deserialize(e, el_cls) for k, e in value.items()}
             else:
                 parent[name] = value
+        elif field.type is typing.Union[str, typing.List[str]]:
+            if type(value) is str or (type(value) is list and type(value[0]) is str):
+                parent[name] = value
+            else:
+                raise TypeError(
+                    'keyword argument "%s" should be a string or a list of strings'
+                    % name
+                )
         else:
             raise TypeError("unanticipated field type %s" % field.type)
     return serializer_cls(**kwargs)

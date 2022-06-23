@@ -35,6 +35,19 @@ def validate_prerequisites(
             )
 
 
+def validate_references(
+    conf: Config, stage: Stage, ins: typing.List[str], rel_script_path: str
+):
+    ins_set = set()
+    for filename in ins:
+        if filename in ins_set:
+            print(
+                "WARNING: reference %s of script %s found more than once"
+                % (json.dumps(filename), rel_script_path)
+            )
+        ins_set.add(filename)
+
+
 def validate_targets(
     conf: Config, stage: Stage, outs: typing.List[str], rel_script_path: str
 ):
@@ -65,10 +78,11 @@ def write_deps(
     script_name: str,
     script_path: str,
 ):
-    prerequisites, targets = find_dependencies(
+    prerequisites, references, targets = find_dependencies(
         loader,
         script_path,
         conf.patterns.prerequisites or [],
+        conf.patterns.references or [],
         conf.patterns.targets or [],
     )
 
@@ -77,14 +91,15 @@ def write_deps(
 
     rel_script_path = os.path.join(stage.name, script_name)
     validate_prerequisites(conf, stage, prerequisites, rel_script_path)
+    validate_references(conf, stage, references, rel_script_path)
     validate_targets(conf, stage, targets, rel_script_path)
 
     if len(targets) == 0:
         print("    no target, skipping script %s" % script_name)
         return
 
-    if len(prerequisites) == 0:
-        print("    no prerequisite, skipping script %s" % script_name)
+    if len(prerequisites) == 0 and len(references) == 0:
+        print("    no prerequisite or reference, skipping script %s" % script_name)
         return
 
     if conf.overrides is not None:
@@ -105,6 +120,7 @@ def write_deps(
             "$(DEBA_MD5_DIR)/%s.md5" % (rel_script_path),
             " ".join(
                 ["$(DEBA_DATA_DIR)/%s" % name for name in prerequisites]
+                + ["$(DEBA_MD5_DIR)/%s.md5" % name for name in references]
                 + (
                     [
                         "$(DEBA_MD5_DIR)/%s.md5" % str(p)

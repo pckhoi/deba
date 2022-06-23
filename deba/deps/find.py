@@ -49,7 +49,8 @@ def build_module_from_filepath(loader: Loader, filepath: str) -> Node:
 def find_dependencies(
     loader: Loader,
     filepath: str,
-    prerequisite_targets: typing.List[ExprPattern],
+    prerequisite_patterns: typing.List[ExprPattern],
+    reference_patterns: typing.List[ExprPattern],
     target_patterns: typing.List[ExprPattern],
 ) -> typing.Tuple[typing.List[str], typing.List[str]]:
     module_node = build_module_from_filepath(loader, filepath)
@@ -61,12 +62,27 @@ def find_dependencies(
                 stmt,
                 module_node.spec,
                 stack.push(),
-                prerequisite_targets,
+                prerequisite_patterns,
+                reference_patterns,
                 target_patterns,
             )
         else:
             loader.populate_scope(module_node.spec, stack, module_node.ast, stmt)
     raise ModuleParseError("main block not found")
+
+
+def scan_patterns(
+    stack: Stack,
+    call: ast.Call,
+    patterns: typing.List[ExprPattern],
+    extracted: typing.List[str],
+) -> bool:
+    for tmpl in patterns:
+        s = tmpl.match_node(stack, call)
+        if s is not None:
+            extracted.append(s)
+            return True
+    return False
 
 
 def scan(
@@ -75,36 +91,34 @@ def scan(
     spec: ModuleSpec,
     stack: Stack,
     prerequisite_patterns: typing.List[ExprPattern],
+    reference_patterns: typing.List[ExprPattern],
     target_patterns: typing.List[ExprPattern],
-) -> typing.Tuple[typing.List[str], typing.List[str]]:
-    prerequisites, targets = [], []
+) -> typing.Tuple[typing.List[str], typing.List[str], typing.List[str]]:
+    prerequisites, references, targets = [], [], []
     for stmt in node.body:
         loader.populate_scope(spec, stack, node, stmt)
         for t in ast.walk(stmt):
             if isinstance(t, ast.Call):
-                for tmpl in target_patterns:
-                    s = tmpl.match_node(stack, t)
-                    if s is not None:
-                        targets.append(s)
-                        break
-                else:
-                    for tmpl in prerequisite_patterns:
-                        s = tmpl.match_node(stack, t)
-                        if s is not None:
-                            prerequisites.append(s)
-                            break
-                    else:
-                        func = stack.dereference(t.func)
-                        if func is None or not isinstance(func.ast, ast.FunctionDef):
-                            continue
-                        ins, outs = scan(
-                            loader,
-                            func.ast,
-                            func.spec,
-                            stack.push(),
-                            prerequisite_patterns,
-                            target_patterns,
-                        )
-                        prerequisites = prerequisites + ins
-                        targets = targets + outs
-    return prerequisites, targets
+                if scan_patterns(stack, t, target_patterns, targets):
+                    break
+                if scan_patterns(stack, t, prerequisite_patterns, prerequisites):
+                    break
+                if scan_patterns(stack, t, reference_patterns, references):
+                    break
+
+                func = stack.dereference(t.func)
+                if func is None or not isinstance(func.ast, ast.FunctionDef):
+                    continue
+                pre, ref, tar = scan(
+                    loader,
+                    func.ast,
+                    func.spec,
+                    stack.push(),
+                    prerequisite_patterns,
+                    reference_patterns,
+                    target_patterns,
+                )
+                prerequisites = prerequisites + pre
+                references = references + ref
+                targets = targets + tar
+    return prerequisites, references, targets

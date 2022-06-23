@@ -18,10 +18,11 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
                 Stage(name="clean", ignored_scripts=["d.py"]),
                 Stage(name="fuse", ignored_targets=["duplicates.csv"]),
             ],
-            targets=["fuse/data.csv"],
+            targets=["fuse/data.csv", "fuse/data_b.csv"],
             patterns=ExprPatterns(
                 prerequisites=[r'read_csv(".+\\.csv")'],
                 targets=[r'`*`.to_csv(".+\\.csv")'],
+                references=[r'json.loads(".+\\.json")'],
             ),
             overrides=[
                 ExecutionRule(
@@ -71,6 +72,14 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
                 '  df.to_csv("fuse/data.csv")',
             ],
         )
+        self.write_file(
+            "fuse/b.py",
+            [
+                'if __name__ == "__main__":',
+                '  conf = json.loads("my_config.json")',
+                '  df.to_csv("fuse/data_b.csv")',
+            ],
+        )
         self.write_file("fuse/b.pyc", [""])
 
         args = parser.parse_args(["deps", "--stage", "clean"])
@@ -98,6 +107,9 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
                 "",
                 "$(DEBA_DATA_DIR)/fuse/data.csv &: $(DEBA_MD5_DIR)/fuse/a.py.md5 $(DEBA_DATA_DIR)/clean/b_output.csv | $(DEBA_DATA_DIR)/fuse",
                 "\t$(call deba_execute,fuse/a.py)",
+                "",
+                "$(DEBA_DATA_DIR)/fuse/data_b.csv &: $(DEBA_MD5_DIR)/fuse/b.py.md5 $(DEBA_MD5_DIR)/my_config.json.md5 | $(DEBA_DATA_DIR)/fuse",
+                "\t$(call deba_execute,fuse/b.py)",
                 "",
                 "",
             ],

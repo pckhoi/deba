@@ -9,6 +9,7 @@ Smart pipeline framework that knows how to analyze your Python scripts (without 
     - [Targets and prerequisites detection](#targets-and-prerequisites-detection)
       - [User-defined pattern](#user-defined-pattern)
       - [deba.data](#debadata)
+      - [References](#references)
       - [Testing patterns](#testing-patterns)
     - [Give it a go](#give-it-a-go)
   - [Configuration](#configuration)
@@ -85,6 +86,10 @@ df.to_csv(deba.data('clean/my_target.csv'))
 
 Then you may define patterns like this to pick up prerequisites and targets respectively: `pd.read_csv(deba.data(r'.+\.csv'))` and `df.to_csv(deba.data(r'.+\.csv'))`. It is a good idea to always use `deba.data` while accessing data in scripts.
 
+#### References
+
+References are non-data prerequisites i.e. something that you keep in your Git commit. They could be reference files or config files. Reference patterns can be given along side other patterns, but the main difference is that they are assumed to be rooted at the root folder rather than the `dataDir`.
+
 #### Testing patterns
 
 Deba has a utility command called `test` that helps you test a pattern against a function call. Example:
@@ -139,6 +144,10 @@ patterns:
   # prerequisite patterns are patterns that deba uses during code analysis to detect prerequisites
   prerequisites:
     - pd.read_csv(deba.data(r'.+\.csv'))
+  # references are prerequisites that are located under root dir instead of dataDir
+  references:
+    - json.load(r'.+\.json')
+    - yaml.load(r'.+\.yaml')
   # target patterns are patterns that deba uses during code analysis to detect targets
   targets:
     - "`*`.to_csv(deba.data(r'.+\\.csv'))"

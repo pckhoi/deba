@@ -203,9 +203,13 @@ class ExprPatterns(object):
     targets: typing.List[ExprPattern] = doc(
         "target expression patterns", converter=expr_templates
     )
+    references: typing.List[ExprPattern] = doc(
+        "reference expression patterns", converter=expr_templates
+    )
 
     def as_dict(self) -> typing.Dict:
         return {
             "prerequisites": [obj.text for obj in self.prerequisites],
             "targets": [obj.text for obj in self.targets],
+            "references": [obj.text for obj in self.references],
         }

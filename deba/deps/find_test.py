@@ -685,6 +685,7 @@ class DepsFinderTestCase(ASTMixin, TempDirMixin, TestCase):
                 "",
                 "if __name__ == '__main__':",
                 "  a = read_csv('abc.csv')",
+                "  conf = json.loads('def.json')",
                 "  b = read_csv(b_name)",
                 "  d = my_func()",
                 "",
@@ -694,14 +695,16 @@ class DepsFinderTestCase(ASTMixin, TempDirMixin, TestCase):
                 "  b.MyClass.save_file(d)",
             ],
         )
-        ins, outs = find_dependencies(
+        pre, ref, tar = find_dependencies(
             loader,
             self.file_path("a.py"),
             [ExprPattern.from_str(r'read_csv(r"\w+\.csv")')],
+            [ExprPattern.from_str(r'json.loads(r".+\.json")')],
             [ExprPattern.from_str(r'`*`.to_csv(r"\w+\.csv")')],
         )
-        self.assertEqual(ins, ["abc.csv", "file_b.csv", "qwe.csv"])
-        self.assertEqual(outs, ["def.csv", "file_c.csv", "asd.csv"])
+        self.assertEqual(pre, ["abc.csv", "file_b.csv", "qwe.csv"])
+        self.assertEqual(ref, ["def.json"])
+        self.assertEqual(tar, ["def.csv", "file_c.csv", "asd.csv"])
 
     def test_load_module_from_the_same_package(self):
         loader = Loader([self._dir.name])

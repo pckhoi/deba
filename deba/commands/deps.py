@@ -154,7 +154,6 @@ def exec(conf: Config, args: argparse.Namespace):
             )
 
             for script_name, script_path in stage.scripts():
-                print('script_name="%s", script_path="%s"' % (script_name, script_path))
                 write_deps(conf, stage, loader, f, script_name, script_path)
     else:
         os.makedirs(conf.deba_dir, exist_ok=True)

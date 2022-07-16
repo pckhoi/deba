@@ -45,7 +45,9 @@ class Stage(object):
         return False
 
     def scripts(self) -> typing.Iterator[str]:
-        for filename in os.listdir(self.script_dir):
+        filenames = os.listdir(self.script_dir)
+        filenames.sort()
+        for filename in filenames:
             if self._is_script_ignored(filename):
                 continue
             if filename.endswith(".py"):

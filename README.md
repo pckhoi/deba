@@ -117,7 +117,9 @@ stages:
   # stage name is also the folder name
   - name: clean
     # if you want deba to ignore some scripts in this stage, this is how it can be done
+    # file names could be Unix shell-style wildcards as supported by fnmatch
     ignoredScripts:
+      - "*.spot-check.py"
       - baton_rouge_pd_cprr.py
   - name: match
     # if deba somehow cannot pick up some prerequisites, you can include them manually for all

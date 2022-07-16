@@ -15,7 +15,7 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
         add_subcommand(subparsers)
         conf = Config(
             stages=[
-                Stage(name="clean", ignored_scripts=["d.py"]),
+                Stage(name="clean", ignored_scripts=["d.py", "*.spot-check.py"]),
                 Stage(name="fuse", ignored_targets=["duplicates.csv"]),
             ],
             targets=["fuse/data.csv", "fuse/data_b.csv"],
@@ -61,6 +61,14 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
                 'if __name__ == "__main__":',
                 '  df = read_csv("raw/d_input.csv")',
                 '  df.to_csv("clean/d_output.csv")',
+            ],
+        )
+        self.write_file(
+            "clean/d.spot-check.py",
+            [
+                'if __name__ == "__main__":',
+                '  df = read_csv("raw/d_spot_check_input.csv")',
+                '  df.to_csv("clean/d_spot_check_output.csv")',
             ],
         )
         self.write_file(

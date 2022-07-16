@@ -1,6 +1,7 @@
 import os
 import typing
 import pathlib
+from fnmatch import fnmatchcase
 
 from attrs import define, validators
 
@@ -36,9 +37,16 @@ class Stage(object):
     def script_dir(self) -> str:
         return os.path.join(self._conf._root_dir, self.name)
 
+    def _is_script_ignored(self, filename: str) -> bool:
+        if self.ignored_scripts is not None:
+            for pattern in self.ignored_scripts:
+                if fnmatchcase(filename, pattern):
+                    return True
+        return False
+
     def scripts(self) -> typing.Iterator[str]:
         for filename in os.listdir(self.script_dir):
-            if self.ignored_scripts is not None and filename in self.ignored_scripts:
+            if self._is_script_ignored(filename):
                 continue
             if filename.endswith(".py"):
                 yield filename, os.path.join(self.script_dir, filename)

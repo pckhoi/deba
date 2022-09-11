@@ -14,7 +14,11 @@ def exec(conf: Config, args: argparse.Namespace):
 
 @subcommand(exec=exec)
 def add_subcommand(
-    subparsers: argparse._SubParsersAction,
+    subparsers: argparse._SubParsersAction, parent_parser: argparse.ArgumentParser
 ) -> argparse.ArgumentParser:
-    parser = subparsers.add_parser(name="targets", help="print targets")
+    parser = subparsers.add_parser(
+        name="targets",
+        parents=[parent_parser],
+        help="print targets",
+    )
     return parser

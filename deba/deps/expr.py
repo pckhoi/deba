@@ -3,10 +3,14 @@ import itertools
 import typing
 import ast
 from fnmatch import fnmatchcase
+import logging
 
 from attrs import define, field
 from deba.attrs_utils import field_transformer, doc
 from deba.deps.module import Stack
+
+
+logger = logging.getLogger("deba")
 
 
 class ExprTemplateParseError(ValueError):

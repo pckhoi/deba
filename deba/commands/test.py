@@ -22,10 +22,12 @@ def exec(conf: Config, args: argparse.Namespace):
 
 @subcommand(exec=exec, open_config=False)
 def add_subcommand(
-    subparsers: argparse._SubParsersAction,
+    subparsers: argparse._SubParsersAction, parent_parser: argparse.ArgumentParser
 ) -> argparse.ArgumentParser:
     parser = subparsers.add_parser(
-        name="test", help="test a pattern against a function call"
+        name="test",
+        parents=[parent_parser],
+        help="test a pattern against a function call",
     )
     parser.add_argument("pattern")
     parser.add_argument("function_call")

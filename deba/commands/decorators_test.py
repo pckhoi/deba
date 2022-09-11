@@ -26,15 +26,22 @@ class WithConfigTestCase(unittest.TestCase):
         @subcommand(exec=exec)
         def add_my_subcommand(
             subparsers: argparse._SubParsersAction,
+            parent_parser: argparse.ArgumentParser,
         ) -> argparse.ArgumentParser:
-            parser = subparsers.add_parser(name="my-sub-command")
+            parser = subparsers.add_parser(
+                name="my-sub-command", parents=[parent_parser]
+            )
             parser.add_argument("--my-sub-flag", type=str, default="def")
             return parser
 
         parser = argparse.ArgumentParser("my-program")
         parser.set_defaults(my_arg=3)
         subparsers = parser.add_subparsers()
-        add_my_subcommand(subparsers)
+        parent = argparse.ArgumentParser(add_help=False)
+        parent.add_argument(
+            "-v", "--verbose", action="store_true", help="increase output verbosity"
+        )
+        add_my_subcommand(subparsers, parent)
 
         args = parser.parse_args(["my-sub-command", "--my-sub-flag", "abc"])
         args.exec(my_conf, args)

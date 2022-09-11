@@ -1,12 +1,14 @@
 import typing
 import tempfile
 import ast
-import io
 import os
 import sys
 import shutil
+import unittest
+import argparse
 
-from attrs import define, field
+from deba.commands.decorators import ADD_COMMAND_FUNC
+from deba.config import Config
 
 
 def ast_dump(obj):
@@ -78,3 +80,24 @@ class TempDirMixin(object):
 
     def assertDirRemoved(self, dirname: str):
         self.assertFalse(os.path.isdir(self.file_path(dirname)))
+
+
+class CommandTestCaseMixin(object):
+    def exec(self, conf: Config, *args: str):
+        parser = argparse.ArgumentParser("deba")
+        subparsers = parser.add_subparsers()
+        parent = argparse.ArgumentParser(add_help=False)
+        parent.add_argument(
+            "-v", "--verbose", action="store_true", help="increase output verbosity"
+        )
+        self._add_subcommand(subparsers, parent)
+        parser_args = parser.parse_args(args)
+        parser_args.exec(conf, parser_args)
+
+
+def subcommand_testcase(add_subcommand: ADD_COMMAND_FUNC):
+    def fn(original_class: CommandTestCaseMixin):
+        original_class._add_subcommand = staticmethod(add_subcommand)
+        return original_class
+
+    return fn

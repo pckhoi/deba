@@ -1,11 +1,15 @@
 import argparse
 import pathlib
 import shutil
+import logging
 
 from deba.commands.decorators import subcommand
 from deba.config import Config, Stage
 from deba.deps.expr import ExprPatterns
 from deba.serialize import yaml_dump
+
+
+logger = logging.getLogger("deba")
 
 
 def is_line_found(file: pathlib.Path, expected_line: str) -> bool:
@@ -113,10 +117,12 @@ def exec(conf: Config, args: argparse.Namespace):
 
 @subcommand(exec=exec, open_config=False)
 def add_subcommand(
-    subparsers: argparse._SubParsersAction,
+    subparsers: argparse._SubParsersAction, parent_parser: argparse.ArgumentParser
 ) -> argparse.ArgumentParser:
     parser = subparsers.add_parser(
-        name="init", description="initialize deba config in the current folder"
+        name="init",
+        parents=[parent_parser],
+        description="initialize deba config in the current folder",
     )
     parser.add_argument(
         "--stages",

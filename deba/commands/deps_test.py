@@ -5,13 +5,12 @@ from deba.commands.deps import add_subcommand
 from deba.config import Config, ExecutionRule, Stage
 from deba.deps.expr import ExprPatterns
 from deba.test_utils import TempDirMixin
+from deba.test_utils import subcommand_testcase, CommandTestCaseMixin
 
 
-class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
+@subcommand_testcase(add_subcommand)
+class DepsCommandTestCase(CommandTestCaseMixin, TempDirMixin, unittest.TestCase):
     def test_run(self):
-        parser = argparse.ArgumentParser("deba")
-        subparsers = parser.add_subparsers()
-        add_subcommand(subparsers)
         conf = Config(
             stages=[
                 Stage(name="clean", ignored_scripts=["d.py", "*.spot-check.py"]),
@@ -89,8 +88,7 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
         )
         self.write_file("fuse/b.pyc", [""])
 
-        args = parser.parse_args(["deps", "--stage", "clean"])
-        args.exec(conf, args)
+        self.exec(conf, "deps", "--stage", "clean")
 
         self.assertFileContent(
             ".deba/deps/clean.d",
@@ -104,8 +102,7 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
             ],
         )
 
-        args = parser.parse_args(["deps", "--stage", "fuse"])
-        args.exec(conf, args)
+        self.exec(conf, "deps", "--stage", "fuse")
 
         self.assertFileContent(
             ".deba/deps/fuse.d",
@@ -122,8 +119,7 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
             ],
         )
 
-        args = parser.parse_args(["deps"])
-        args.exec(conf, args)
+        self.exec(conf, "deps")
 
         self.assertFileContent(
             ".deba/main.d",
@@ -139,9 +135,6 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
         )
 
     def test_skip_scripts_with_no_target(self):
-        parser = argparse.ArgumentParser("deba")
-        subparsers = parser.add_subparsers()
-        add_subcommand(subparsers)
         conf = Config(
             stages=[
                 Stage(name="fuse"),
@@ -177,8 +170,7 @@ class DepsCommandTestCase(TempDirMixin, unittest.TestCase):
             ],
         )
 
-        args = parser.parse_args(["deps", "--stage", "fuse"])
-        args.exec(conf, args)
+        self.exec(conf, "deps", "--stage", "fuse")
 
         self.assertFileContent(
             ".deba/deps/fuse.d",

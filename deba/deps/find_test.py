@@ -688,6 +688,7 @@ class DepsFinderTestCase(ASTMixin, TempDirMixin, TestCase):
                 "  conf = json.loads('def.json')",
                 "  b = read_csv(b_name)",
                 "  d = my_func()",
+                "  e = concat([read_csv('z.csv'), read_csv('x.csv')])",
                 "",
                 "  a.to_csv('def.csv')",
                 "  c_name = 'file_c.csv'",
@@ -702,7 +703,7 @@ class DepsFinderTestCase(ASTMixin, TempDirMixin, TestCase):
             [ExprPattern.from_str(r'json.loads(r".+\.json")')],
             [ExprPattern.from_str(r'`*`.to_csv(r"\w+\.csv")')],
         )
-        self.assertEqual(pre, ["abc.csv", "file_b.csv", "qwe.csv"])
+        self.assertEqual(pre, ["abc.csv", "file_b.csv", "qwe.csv", 'z.csv', 'x.csv'])
         self.assertEqual(ref, ["def.json"])
         self.assertEqual(tar, ["def.csv", "file_c.csv", "asd.csv"])
 

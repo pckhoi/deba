@@ -2,10 +2,14 @@ import ast
 import os
 from importlib.machinery import ModuleSpec
 import typing
+import logging
 
 from deba.deps.module import Loader, Node, Stack
 
 from deba.deps.expr import ExprPattern
+
+
+logger = logging.getLogger("deba")
 
 
 class ModuleParseError(ValueError):
@@ -100,11 +104,11 @@ def scan(
         for t in ast.walk(stmt):
             if isinstance(t, ast.Call):
                 if scan_patterns(stack, t, target_patterns, targets):
-                    break
+                    continue
                 if scan_patterns(stack, t, prerequisite_patterns, prerequisites):
-                    break
+                    continue
                 if scan_patterns(stack, t, reference_patterns, references):
-                    break
+                    continue
 
                 func = stack.dereference(t.func)
                 if func is None or not isinstance(func.ast, ast.FunctionDef):

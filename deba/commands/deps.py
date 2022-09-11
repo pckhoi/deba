@@ -2,6 +2,7 @@ import argparse
 import io
 import json
 import os
+import logging
 import typing
 
 from deba.commands.decorators import subcommand
@@ -9,6 +10,9 @@ from deba.config import Config, Stage
 
 from deba.deps.module import Loader
 from deba.deps.find import find_dependencies
+
+
+logger = logging.getLogger("deba")
 
 
 class InvalidDependencyError(Exception):
@@ -172,9 +176,13 @@ def exec(conf: Config, args: argparse.Namespace):
 
 @subcommand(exec=exec)
 def add_subcommand(
-    subparsers: argparse._SubParsersAction,
+    subparsers: argparse._SubParsersAction, parent_parser: argparse.ArgumentParser
 ) -> argparse.ArgumentParser:
-    parser = subparsers.add_parser(name="deps", description="write make rules")
+    parser = subparsers.add_parser(
+        name="deps",
+        parents=[parent_parser],
+        description="write make rules",
+    )
     parser.add_argument(
         "--stage",
         type=str,

@@ -1,3 +1,4 @@
 attrs==21.4.0
 zope.interface==5.4.0
 PyYAML==5.3
+astpretty==3.0.0
